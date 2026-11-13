@@ -1,6 +1,6 @@
 // Récap de fin de partie : transforme les statistiques en petites récompenses.
 
-import type { Joueur, StatsPartie } from '../types'
+import type { CarteJouee, Joueur, StatsPartie } from '../types'
 
 export interface Trophee {
   emoji: string
@@ -76,4 +76,24 @@ export function calculerTrophees(
   }
 
   return trophees
+}
+
+/** Additionne les cartes et gorgées reçues par chaque joueur. */
+export function calculerStats(cartesJouees: CarteJouee[]): StatsPartie {
+  const parJoueur = cartesJouees.reduce<StatsPartie['parJoueur']>(
+    (cumul, jouee) =>
+      jouee.joueurs.reduce((acc, joueur, rang) => {
+        const avant = acc[joueur.id] ?? { cartes: 0, gorgees: 0 }
+        return {
+          ...acc,
+          [joueur.id]: {
+            cartes: avant.cartes + 1,
+            // Les gorgées d'une carte vont au premier joueur nommé.
+            gorgees: avant.gorgees + (rang === 0 ? jouee.gorgees : 0),
+          },
+        }
+      }, cumul),
+    {},
+  )
+  return { cartesJouees: cartesJouees.length, parJoueur }
 }
