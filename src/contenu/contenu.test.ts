@@ -5,12 +5,13 @@ import { describe, expect, test } from 'vitest'
 import { CATALOGUE } from '../jeux/catalogue'
 import { filtrerCartes } from '../moteur/cartes'
 import type { Joueur } from '../types'
-import defisVerites from './defis-verites.json'
 import gages from './gages.json'
 import { CARTES, problemesCarte } from './index'
 
+const TOUTES_LES_CARTES = Object.values(CARTES).flat()
+
 const FICHIERS: Record<string, { texte: string; id: string }[]> = {
-  'defis-verites.json': defisVerites,
+  ...CARTES,
   'gages.json': gages,
 }
 
@@ -41,15 +42,16 @@ describe('contenu des cartes', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  test('defis-verites.json : toutes les cartes sont bien formées', () => {
-    for (const carte of defisVerites) {
+  test('toutes les cartes sont bien formées', () => {
+    expect(TOUTES_LES_CARTES.length).toBeGreaterThanOrEqual(640)
+    for (const carte of TOUTES_LES_CARTES) {
       expect(problemesCarte(carte), `carte ${carte.id}`).toEqual([])
     }
   })
 
   test('seuls les jetons connus sont utilisés entre accolades', () => {
     const jetonValide = /^\{(j[12]|(bois|boit|boivent|buvez|distribue|gorgees):[1-5])\}$/
-    for (const carte of defisVerites) {
+    for (const carte of TOUTES_LES_CARTES) {
       const textes = [carte.texte, carte.texteFin ?? '']
       for (const jeton of textes.join(' ').match(/\{[^}]*\}/g) ?? []) {
         expect(jeton, `carte ${carte.id}`).toMatch(jetonValide)

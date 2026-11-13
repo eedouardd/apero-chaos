@@ -5,6 +5,7 @@ import { REGLAGES_PAR_DEFAUT, type CarteJouee, type Joueur } from '../types'
 import { ageRequis } from './age'
 import { gagesAutorises, tirerGage } from './gages'
 import { creerJoueur } from './joueurs'
+import { angleRoue, dureeMeche, sanctionPerdant, tirerAction } from './manches'
 import { calculerStats, calculerTrophees } from './recap'
 import { evaluerJeux } from './recommandations'
 
@@ -149,5 +150,52 @@ describe('lireSauvegarde', () => {
 
   test('renvoie les valeurs par défaut si le contenu n’est pas un objet', () => {
     expect(lireSauvegarde('cassé').joueurs).toEqual([])
+  })
+})
+
+describe('jeux à manches', () => {
+  const carte = (id: string, tags: string[] = []) => ({
+    id,
+    texte: '{j1}, action.',
+    ton: 'tout-public' as const,
+    intensite: 'soft' as const,
+    tags,
+    minJoueurs: 2,
+  })
+
+  test('la roue s’arrête avec la part du joueur sous la flèche', () => {
+    // 4 joueurs : parts de 90°, le centre de la part 1 est à 135°.
+    const angle = angleRoue(1, 4, 0)
+    expect(angle % 360).toBe(225)
+    expect(angle).toBeGreaterThanOrEqual(5 * 360)
+  })
+
+  test('la roue repart toujours vers l’avant', () => {
+    const premier = angleRoue(0, 4, 0)
+    expect(angleRoue(3, 4, premier)).toBeGreaterThan(premier)
+  })
+
+  test('tirerAction respecte le profil et évite les répétitions', () => {
+    const prudent = joueur('Zoé', { defisPhysiques: false })
+    const cartes = [carte('a', ['physique']), carte('b'), carte('c')]
+    expect(tirerAction(cartes, prudent, new Set(['b']), () => 0)?.id).toBe('c')
+    expect(tirerAction([carte('a', ['physique'])], prudent, new Set())).toBeNull()
+    // Tout a déjà été tiré : on recycle plutôt que de bloquer.
+    expect(tirerAction([carte('b')], prudent, new Set(['b']))?.id).toBe('b')
+  })
+
+  test('la mèche dure entre 12 et 35 secondes', () => {
+    expect(dureeMeche(() => 0)).toBe(12000)
+    expect(dureeMeche(() => 1)).toBe(35000)
+  })
+
+  test('le perdant boit, ou fait un gage s’il ne boit pas', () => {
+    const sobre = joueur('Zoé', { boitAlcool: false })
+    const texte = (c: CarteJouee) => c.segments.map((s) => s.valeur).join('')
+    const avec = sanctionPerdant(carte('d'), joueur('Tom'), [sobre], REGLAGES_PAR_DEFAUT)
+    expect(texte(avec)).toBe('Tom boit 2 gorgées.')
+    expect(avec.joueurs.map((j) => j.prenom)).toEqual(['Tom', 'Zoé'])
+    expect(avec.gorgees).toBe(2)
+    expect(texte(sanctionPerdant(carte('d'), sobre, [], REGLAGES_PAR_DEFAUT))).toBe('Zoé fait un gage.')
   })
 })

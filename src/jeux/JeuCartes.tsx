@@ -1,13 +1,12 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Bouton } from '../composants/Bouton'
-import { Cadre } from '../composants/Cadre'
+import { CadrePartie, PartieVide } from '../composants/CadrePartie'
 import { CarteVue } from '../composants/CarteVue'
-import { Fenetre } from '../composants/Fenetre'
-import { CARTES, GAGES } from '../contenu'
+import { Decompte } from '../composants/Decompte'
+import { CARTES } from '../contenu'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
-import { construirePaquet } from '../moteur/cartes'
-import { gagesAutorises, tirerGage } from '../moteur/gages'
+import { construirePaquet, rendreCarte } from '../moteur/cartes'
 import { calculerStats } from '../moteur/recap'
 import { cartesVues, noterCartesVues } from './memoire'
 
@@ -15,8 +14,8 @@ import { cartesVues, noterCartesVues } from './memoire'
 const TAILLE_PAQUET = 25
 
 /**
- * Jeu de cartes générique : sert à « Défis & Vérités » et aux autres jeux
- * qui consistent à lire une carte puis passer à la suivante.
+ * Jeu de cartes générique : « Défis & Vérités », « Je n'ai jamais », « Qui pourrait… »,
+ * « Tu préfères… » et « Vrai ou Bluff » : on lit une carte, puis on passe à la suivante.
  */
 export function JeuCartes({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPartie) {
   // Le paquet est fabriqué une seule fois, au début de la partie.
@@ -27,28 +26,17 @@ export function JeuCartes({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPar
     }),
   )
   const [index, setIndex] = useState(0)
-  const [enPause, setEnPause] = useState(false)
-  const [gage, setGage] = useState<string | null>(null)
+  const [decompte, setDecompte] = useState(false)
+  const fermerDecompte = useCallback(() => setDecompte(false), [])
 
-  const gages = useMemo(
-    () => gagesAutorises(GAGES, joueurs, reglages),
-    [joueurs, reglages],
-  )
-
-  const terminer = useCallback(
-    (nbCartesVues: number) => {
-      const vues = paquet.slice(0, nbCartesVues)
-      noterCartesVues(
-        jeu.id,
-        vues.map((jouee) => jouee.carte.id),
-      )
-      onFin(calculerStats(vues))
-    },
-    [paquet, jeu.id, onFin],
-  )
-
-  const fermerPause = useCallback(() => setEnPause(false), [])
-  const fermerGage = useCallback(() => setGage(null), [])
+  function terminer(nbCartesVues: number) {
+    const vues = paquet.slice(0, nbCartesVues)
+    noterCartesVues(
+      jeu.id,
+      vues.map((jouee) => jouee.carte.id),
+    )
+    onFin(calculerStats(vues))
+  }
 
   function carteSuivante() {
     jouerSon('carte')
@@ -61,98 +49,39 @@ export function JeuCartes({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPar
   }
 
   const jouee = paquet[index]
-
-  // Réglages trop stricts pour ce groupe : aucune carte ne passe le filtre.
-  if (jouee === undefined) {
-    return (
-      <Cadre titre={jeu.nom} couleur={jeu.couleur} onRetour={onQuitter}>
-        <div className="m-auto grid gap-4 text-center">
-          <p className="text-5xl" aria-hidden="true">
-            🫥
-          </p>
-          <p className="text-lg text-texte-doux">
-            Aucune carte ne correspond à vos réglages et à vos profils. Essayez
-            un autre ton ou une autre intensité.
-          </p>
-          <Bouton variante="contour" onClick={onQuitter}>
-            Changer de jeu
-          </Bouton>
-        </div>
-      </Cadre>
-    )
-  }
+  if (jouee === undefined) return <PartieVide jeu={jeu} onQuitter={onQuitter} />
 
   const derniere = index + 1 >= paquet.length
+  // La consigne du jeu passe par le même moteur que les cartes (gorgées ou gages).
+  const consigne =
+    jeu.consigne === undefined
+      ? undefined
+      : rendreCarte({ ...jouee.carte, texte: jeu.consigne }, jouee.joueurs, reglages)
+          .segments
 
   return (
-    <Cadre
-      titre={jeu.nom}
-      couleur={jeu.couleur}
-      onRetour={() => setEnPause(true)}
-      iconeRetour="⏸"
-      libelleRetour="Mettre en pause"
-      pied={
-        <Bouton variante="contour" onClick={() => setGage(tirerGage(gages, gage))}>
-          🎭 Tirer un gage
-        </Bouton>
+    <CadrePartie
+      jeu={jeu}
+      joueurs={joueurs}
+      reglages={reglages}
+      etape={index + 1}
+      total={paquet.length}
+      onTerminer={() => terminer(index + 1)}
+      onQuitter={onQuitter}
+      actionPied={
+        jeu.decompte ? (
+          <Bouton onClick={() => setDecompte(true)}>3-2-1 !</Bouton>
+        ) : undefined
       }
     >
-      <div
-        className="mb-3 flex items-center gap-3"
-        role="progressbar"
-        aria-label="Avancement de la partie"
-        aria-valuemin={1}
-        aria-valuemax={paquet.length}
-        aria-valuenow={index + 1}
-      >
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
-          <div
-            className="h-full origin-left rounded-full bg-accent transition-transform duration-300"
-            style={{ transform: `scaleX(${(index + 1) / paquet.length})` }}
-          />
-        </div>
-        <span className="text-sm text-texte-doux tabular-nums">
-          {index + 1} / {paquet.length}
-        </span>
-      </div>
-
       <CarteVue
         key={jouee.carte.id}
         jouee={jouee}
+        consigne={consigne}
         indice={derniere ? 'Touche pour voir le récap' : 'Touche la carte pour continuer'}
         onSuivante={carteSuivante}
       />
-
-      {enPause ? (
-        <Fenetre titre="Pause" onFermer={fermerPause}>
-          <div className="grid gap-2">
-            <Bouton onClick={fermerPause}>Reprendre</Bouton>
-            <Bouton variante="contour" onClick={() => terminer(index + 1)}>
-              Terminer la partie
-            </Bouton>
-            <Bouton variante="discret" onClick={onQuitter}>
-              Quitter sans récap
-            </Bouton>
-          </div>
-        </Fenetre>
-      ) : null}
-
-      {gage !== null ? (
-        <Fenetre titre="Gage" onFermer={fermerGage}>
-          <p className="pb-5 text-center text-2xl leading-snug font-semibold">
-            {gage}
-          </p>
-          <div className="grid gap-2">
-            <Bouton onClick={fermerGage}>C’est fait</Bouton>
-            <Bouton
-              variante="discret"
-              onClick={() => setGage(tirerGage(gages, gage))}
-            >
-              Un autre gage
-            </Bouton>
-          </div>
-        </Fenetre>
-      ) : null}
-    </Cadre>
+      {decompte ? <Decompte onFini={fermerDecompte} /> : null}
+    </CadrePartie>
   )
 }

@@ -21,6 +21,10 @@ export interface DefinitionJeu {
   /** Le jeu repose surtout sur des révélations personnelles. */
   plutotIntime: boolean
   regles: string[]
+  /** Rappel affiché sous chaque carte (mêmes jetons que les cartes : {boivent:1}…). */
+  consigne?: string
+  /** Affiche un bouton « 3-2-1 » pour voter tous en même temps. */
+  decompte?: boolean
   /** `false` tant que le jeu n'est pas encore jouable. */
   pret: boolean
 }
@@ -64,7 +68,8 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Si une seule personne boit, elle raconte l’histoire.',
       'Personne n’est obligé de se justifier… mais c’est plus drôle.',
     ],
-    pret: false,
+    consigne: 'Ceux qui l’ont déjà fait {boivent:1}.',
+    pret: true,
   },
   {
     id: 'qui-pourrait',
@@ -84,7 +89,9 @@ export const CATALOGUE: DefinitionJeu[] = [
       'La personne la plus désignée boit autant de gorgées que de doigts pointés (3 maximum).',
       'En cas d’égalité, les ex æquo trinquent ensemble.',
     ],
-    pret: false,
+    consigne: '3, 2, 1… pointez ! La personne la plus désignée prend {gorgees:2}.',
+    decompte: true,
+    pret: true,
   },
   {
     id: 'la-roue',
@@ -103,7 +110,7 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Une action tombe ensuite pour ce joueur.',
       'On s’exécute, puis on relance pour le suivant.',
     ],
-    pret: false,
+    pret: true,
   },
   {
     id: 'duel',
@@ -121,8 +128,9 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Deux joueurs sont tirés au sort et s’affrontent sur un mini-défi.',
       'Le reste du groupe arbitre et désigne le vainqueur.',
       'Touchez le prénom du gagnant : le perdant boit (ou fait un gage).',
+      'Égalité ? On rejoue le duel, ou les deux trinquent.',
     ],
-    pret: false,
+    pret: true,
   },
   {
     id: 'tu-preferes',
@@ -142,7 +150,10 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Ceux qui sont en minorité boivent une gorgée. À deux : si vous n’êtes pas d’accord, vous buvez tous les deux.',
       'Interdit de répondre « ni l’un ni l’autre ».',
     ],
-    pret: false,
+    consigne:
+      '3, 2, 1… votez ! La minorité prend {gorgees:1}. À deux : en cas de désaccord, chacun prend {gorgees:1}.',
+    decompte: true,
+    pret: true,
   },
   {
     id: 'la-bombe',
@@ -162,7 +173,7 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Interdit de répéter une réponse déjà donnée.',
       'Celui qui tient le téléphone quand la bombe explose boit (ou fait un gage).',
     ],
-    pret: false,
+    pret: true,
   },
   {
     id: 'vrai-ou-bluff',
@@ -177,12 +188,15 @@ export const CATALOGUE: DefinitionJeu[] = [
     plutotPhysique: false,
     plutotIntime: true,
     regles: [
-      'Le joueur désigné lit le thème en secret et raconte une anecdote sur lui : vraie ou inventée.',
+      'Le joueur désigné raconte une anecdote sur le thème de la carte : vraie ou totalement inventée.',
       'À 3-2-1, les autres votent : pouce en l’air pour « vrai », pouce en bas pour « bluff ».',
       'Le conteur révèle la vérité : ceux qui se sont trompés boivent.',
       'Si tout le monde a trouvé, c’est le conteur qui boit.',
     ],
-    pret: false,
+    consigne:
+      'Histoire vraie ou inventée, au choix. Les autres votent : ceux qui se trompent prennent {gorgees:1}. Tout le monde a trouvé ? {j1} prend {gorgees:2}.',
+    decompte: true,
+    pret: true,
   },
 ]
 

@@ -1,7 +1,10 @@
-import type { CarteJouee } from '../types'
+import type { CarteJouee, Segment } from '../types'
+import { TexteCarte } from './TexteCarte'
 
 interface Props {
   jouee: CarteJouee
+  /** Consigne du jeu rappelée sous le texte (ex. « Ceux qui l'ont fait boivent »). */
+  consigne?: Segment[]
   /** Petit texte en bas de la carte. */
   indice: string
   onSuivante: () => void
@@ -11,7 +14,7 @@ interface Props {
 const LONGUEUR_TEXTE_LONG = 150
 
 /** Une grande carte lisible : on touche n'importe où pour passer à la suivante. */
-export function CarteVue({ jouee, indice, onSuivante }: Props) {
+export function CarteVue({ jouee, consigne, indice, onSuivante }: Props) {
   const longueur = jouee.segments.reduce((total, s) => total + s.valeur.length, 0)
   const tailleTexte =
     longueur > LONGUEUR_TEXTE_LONG ? 'text-[1.35rem]' : 'text-[1.7rem]'
@@ -30,24 +33,13 @@ export function CarteVue({ jouee, indice, onSuivante }: Props) {
       <span
         className={`my-auto block py-4 leading-snug font-semibold ${tailleTexte}`}
       >
-        {jouee.segments.map((segment, index) => {
-          if (segment.type === 'joueur') {
-            return (
-              <strong key={index} className="font-titre texte-neon font-black">
-                {segment.valeur}
-              </strong>
-            )
-          }
-          if (segment.type === 'boisson') {
-            return (
-              <strong key={index} className="font-bold text-neon-jaune">
-                {segment.valeur}
-              </strong>
-            )
-          }
-          return <span key={index}>{segment.valeur}</span>
-        })}
+        <TexteCarte segments={jouee.segments} />
       </span>
+      {consigne ? (
+        <span className="mb-3 block border-t-2 border-trait pt-3 text-base text-texte-doux">
+          <TexteCarte segments={consigne} />
+        </span>
+      ) : null}
       <span className="self-center text-sm text-texte-doux">{indice}</span>
     </button>
   )

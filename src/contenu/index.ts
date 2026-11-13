@@ -3,6 +3,13 @@
 
 import type { Carte, IdJeu, Ton } from '../types'
 import defisVerites from './defis-verites.json'
+import duel from './duel.json'
+import jeNaiJamais from './je-nai-jamais.json'
+import laBombe from './la-bombe.json'
+import laRoue from './la-roue.json'
+import quiPourrait from './qui-pourrait.json'
+import tuPreferes from './tu-preferes.json'
+import vraiOuBluff from './vrai-ou-bluff.json'
 import gagesBruts from './gages.json'
 
 const TONS: readonly string[] = ['tout-public', 'pimente', 'hard']
@@ -41,16 +48,16 @@ function verifier(nomFichier: string, brutes: unknown[]): Carte[] {
   })
 }
 
-/** Les cartes de chaque jeu. Les jeux pas encore écrits ont une liste vide. */
+/** Les cartes de chaque jeu, une fois vérifiées. */
 export const CARTES: Record<IdJeu, Carte[]> = {
   'defis-verites': verifier('defis-verites.json', defisVerites),
-  'je-nai-jamais': [],
-  'qui-pourrait': [],
-  'la-roue': [],
-  duel: [],
-  'tu-preferes': [],
-  'la-bombe': [],
-  'vrai-ou-bluff': [],
+  'je-nai-jamais': verifier('je-nai-jamais.json', jeNaiJamais),
+  'qui-pourrait': verifier('qui-pourrait.json', quiPourrait),
+  'la-roue': verifier('la-roue.json', laRoue),
+  duel: verifier('duel.json', duel),
+  'tu-preferes': verifier('tu-preferes.json', tuPreferes),
+  'la-bombe': verifier('la-bombe.json', laBombe),
+  'vrai-ou-bluff': verifier('vrai-ou-bluff.json', vraiOuBluff),
 }
 
 export interface Gage {

@@ -46,7 +46,7 @@ export function ChoixJeu({ joueurs, onChoisir, onRetour }: Props) {
                 </span>
                 <span className="min-w-0 flex-1">
                   {recommande ? (
-                    <span className="font-titre mb-1 inline-block rounded-full bg-accent px-2 py-0.5 text-[0.6rem] font-bold tracking-wider text-nuit uppercase">
+                    <span className="font-titre mb-1 inline-block rounded-full bg-accent px-2 py-0.5 text-[0.55rem] font-bold tracking-wider whitespace-nowrap text-nuit uppercase">
                       ★ Recommandé pour vous
                     </span>
                   ) : null}

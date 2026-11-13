@@ -32,15 +32,22 @@ Pas encore testé sur un vrai téléphone.
 - Site en ligne : https://eedouardd.github.io/apero-chaos/
 - Déploiement automatique : chaque `git push` sur `main` lance la GitHub Action `.github/workflows/deploy.yml` (tests, construction, publication). GitHub Pages est réglé en mode « GitHub Actions ».
 
+## Étape 3 : terminée et vérifiée dans le navigateur
+
+Les 8 jeux sont jouables, avec 80 cartes ou plus chacun (644 au total) :
+
+- Jeux à cartes (`src/jeux/JeuCartes.tsx`) : Défis & Vérités, Je n'ai jamais, Qui pourrait…, Tu préfères…, Vrai ou Bluff, avec consigne sous la carte et bouton de décompte 3-2-1.
+- `src/jeux/JeuRoue.tsx` (roue animée), `src/jeux/JeuDuel.tsx` (on touche le gagnant, le perdant boit), `src/jeux/JeuBombe.tsx` (minuteur caché de 12 à 35 secondes).
+- Recommandations « Recommandé pour vous » selon le nombre de joueurs et leurs profils.
+- 80 tests automatiques verts.
+
+Les cartes ont été écrites à partir de fichiers compacts convertis en JSON ; les fichiers JSON de `src/contenu` sont désormais la seule source, à modifier à la main.
+
 ## Prochaine étape
 
-Étape 3 : les 7 autres jeux (voir ci-dessous).
+Étape 4 : finitions (relecture du design sur téléphone, sons, animations), puis étape 5 : PWA (installation sur l'écran d'accueil, hors ligne) et guide final (installer sur iPhone et Android, modifier les cartes).
 
-## Ensuite
-
-- Étape 3 : les 7 autres jeux (aujourd'hui marqués « Bientôt disponible » via `pret: false` dans `src/jeux/catalogue.ts`).
-- Étape 4 : 80 cartes minimum par jeu, finitions du design, animations, sons.
-- Étape 5 : PWA (installation, hors ligne), guide final.
+À vérifier par Edouard : test sur un vrai téléphone, surtout les sons et les vibrations.
 
 ## Commandes utiles
 

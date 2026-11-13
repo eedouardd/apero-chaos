@@ -1,5 +1,8 @@
 import type { DefinitionJeu } from '../jeux/catalogue'
+import { JeuBombe } from '../jeux/JeuBombe'
 import { JeuCartes } from '../jeux/JeuCartes'
+import { JeuDuel } from '../jeux/JeuDuel'
+import { JeuRoue } from '../jeux/JeuRoue'
 import type { Joueur, Reglages, StatsPartie } from '../types'
 
 export interface PropsPartie {
@@ -14,6 +17,15 @@ export interface PropsPartie {
 
 /** Aiguillage : affiche le bon composant selon le jeu choisi. */
 export function Partie(props: PropsPartie) {
-  // Les jeux à mécanique spéciale (roue, duel, bombe…) arrivent à l'étape 3.
-  return <JeuCartes {...props} />
+  switch (props.jeu.id) {
+    case 'la-roue':
+      return <JeuRoue {...props} />
+    case 'duel':
+      return <JeuDuel {...props} />
+    case 'la-bombe':
+      return <JeuBombe {...props} />
+    default:
+      // Tous les autres jeux se jouent carte après carte.
+      return <JeuCartes {...props} />
+  }
 }
