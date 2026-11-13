@@ -21,7 +21,7 @@ Tu es le testeur QA d'Apéro Chaos. Ton rôle est de casser l'app avant que les 
 - **Navigation** : retour arrière, quitter en pleine partie, recharger la page, partie interrompue puis reprise.
 - **Stockage local** : données absentes, corrompues ou d'une ancienne version.
 - **Mobile** : petit écran, rotation, PWA hors ligne, son coupé.
-- **Contenu** : variables non remplacées (`{joueur}` visible), fautes, cartes qui violent les règles de sécurité.
+- **Contenu** : jetons non remplacés (`{j1}`, `{j2}` ou `{bois:2}` visibles tels quels), fautes, cartes qui violent les règles de sécurité.
 - **Régression** : les autres jeux fonctionnent toujours.
 
 ## Format de réponse

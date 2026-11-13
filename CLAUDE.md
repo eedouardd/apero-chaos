@@ -40,8 +40,11 @@ Les définitions sont dans `.claude/agents/`. Seul `auteur-contenu` modifie des 
 
 Pour une simple retouche de cartes, `auteur-contenu` puis `qa-testeur` suffisent.
 
-### À préciser dans la demande faite à un sous-agent
+Dans la demande faite à un sous-agent, préciser le jeu ou l'écran concerné et les fichiers à lire.
 
-- Le jeu ou l'écran concerné, et les fichiers à lire.
-- Les jetons réels du projet (`{j1}`, `{bois:2}`, etc.) : `{joueur}` n'existe pas ici.
-- Le skill `apero-chaos-contenu` cité par `auteur-contenu` n'existe pas encore : les règles de contenu sont celles de ce fichier et du `README.md`.
+## Skills du projet
+
+Dans `.claude/skills/` :
+
+- `apero-chaos-contenu` : règles d'écriture des cartes (ton, intensité, sécurité, format JSON). Suivi par `auteur-contenu`.
+- `apero-chaos-nouveau-jeu` : checklist pour ajouter ou modifier un jeu, de la conception à la mise en ligne.
