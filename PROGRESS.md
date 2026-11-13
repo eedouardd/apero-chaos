@@ -26,16 +26,15 @@ Moteur de cartes + « Défis & Vérités » complet :
 
 Pas encore testé sur un vrai téléphone.
 
-## Mise en ligne : bloquée sur une autorisation GitHub
+## Mise en ligne : faite
 
-- Dépôt public créé : https://github.com/eedouardd/apero-chaos (étapes 1 et 2 poussées).
-- Le commit `ci: mise en ligne automatique` (fichier `.github/workflows/deploy.yml`) est fait **en local mais pas poussé** : GitHub refuse, il manque l'autorisation « workflow » à l'outil `gh`.
+- Dépôt public : https://github.com/eedouardd/apero-chaos
+- Site en ligne : https://eedouardd.github.io/apero-chaos/
+- Déploiement automatique : chaque `git push` sur `main` lance la GitHub Action `.github/workflows/deploy.yml` (tests, construction, publication). GitHub Pages est réglé en mode « GitHub Actions ».
 
 ## Prochaine étape
 
-1. Dans un terminal : `gh auth refresh -s workflow` puis suivre la page qui s'ouvre.
-2. `git push` depuis `~/Developer/apero-chaos`.
-3. Activer Pages en mode « GitHub Actions » (réglages du dépôt, rubrique Pages), relancer l'Action, vérifier https://eedouardd.github.io/apero-chaos/.
+Étape 3 : les 7 autres jeux (voir ci-dessous).
 
 ## Ensuite
 
