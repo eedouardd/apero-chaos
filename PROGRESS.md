@@ -14,23 +14,24 @@ Dernière mise à jour : 13 novembre 2026
 
 Squelette, design néon, navigation complète : accueil, joueurs (2 à 12, mini-questionnaire de 3 questions qu'on peut sauter), réglages (ton, intensité, sans alcool, boire = gorgées), écran +18, choix du jeu, règles, fin de partie. Sauvegarde des joueurs et réglages dans le téléphone. Packs premium affichés avec cadenas.
 
-## Étape 2 : en cours (moteur + « Défis & Vérités »)
+## Étape 2 : terminée et vérifiée dans le navigateur
 
-Déjà écrit, le code compile, mais **pas encore branché à l'écran ni testé** :
+Moteur de cartes + « Défis & Vérités » complet :
 
-- `src/moteur/cartes.ts` : filtrage des cartes (ton, intensité, profils), tirage équilibré des joueurs, gorgées ou gages, règles temporaires avec carte de fin.
-- `src/moteur/gages.ts`, `src/moteur/recap.ts` (statistiques et trophées de fin), `src/jeux/memoire.ts`.
+- `src/moteur/cartes.ts` : filtrage (ton, intensité, profils), tirage équilibré des joueurs, gorgées ou gages, règles temporaires avec carte de fin.
+- `src/jeux/JeuCartes.tsx` : grande carte, tap pour passer, prénom en évidence, pause, tirage de gage, récap de fin.
 - `src/contenu/defis-verites.json` : 100 cartes. `src/contenu/gages.json` : 30 gages.
+- 47 tests automatiques verts (`npm test`), dont un garde-fou de sécurité sur le contenu (pas de « cul sec », de shots, de conduite).
+- Partie complète jouée dans le navigateur : 26 cartes, pause, gages, récap.
 
-Reste à faire pour finir l'étape 2 :
+Pas encore testé sur un vrai téléphone.
 
-1. Écrire le composant de partie (`src/jeux/JeuCartes.tsx`) : grande carte, tap pour passer, prénom en évidence, bouton pause, bouton gage. Le brancher dans `src/ecrans/Partie.tsx` (encore provisoire).
-2. Écrire les tests du moteur (`src/moteur/cartes.test.ts`) et un test de sécurité du contenu (pas de « cul sec », de shots, de conduite).
-3. Jouer une partie complète dans le navigateur, puis commit.
+## Prochaine étape
+
+Mise en ligne anticipée sur GitHub Pages : créer le dépôt public `eedouardd/apero-chaos`, ajouter la GitHub Action de déploiement (`.github/workflows/deploy.yml`), pousser, vérifier l'adresse en ligne.
 
 ## Ensuite
 
-- Mise en ligne anticipée sur GitHub Pages dès la fin de l'étape 2 (créer le dépôt, GitHub Action de déploiement).
 - Étape 3 : les 7 autres jeux (aujourd'hui marqués « Bientôt disponible » via `pret: false` dans `src/jeux/catalogue.ts`).
 - Étape 4 : 80 cartes minimum par jeu, finitions du design, animations, sons.
 - Étape 5 : PWA (installation, hors ligne), guide final.

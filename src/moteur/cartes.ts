@@ -181,7 +181,25 @@ export function rendreCarte(
       return { type: 'texte', valeur: morceau }
     })
 
-  return { carte, joueurs: joueursChoisis, segments, gorgees }
+  return {
+    carte,
+    joueurs: joueursChoisis,
+    segments: segments.map(majusculeApresPoint),
+    gorgees,
+  }
+}
+
+/** Met une majuscule à une action de boisson placée en début de phrase (« Raté ? Bois… »). */
+function majusculeApresPoint(segment: Segment, index: number, tous: Segment[]): Segment {
+  if (segment.type !== 'boisson') return segment
+  const avant = tous[index - 1]
+  const debutDePhrase =
+    avant === undefined || (avant.type === 'texte' && /[.?!…]\s*$/.test(avant.valeur))
+  if (!debutDePhrase) return segment
+  return {
+    ...segment,
+    valeur: segment.valeur.charAt(0).toLocaleUpperCase('fr') + segment.valeur.slice(1),
+  }
 }
 
 /** Carte « fin de règle » fabriquée à partir d'une règle temporaire. */

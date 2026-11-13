@@ -7,6 +7,8 @@ interface Props {
   onRetour?: () => void
   /** Texte du bouton retour pour les lecteurs d'écran. */
   libelleRetour?: string
+  /** Symbole du bouton de gauche (flèche par défaut, pause en partie). */
+  iconeRetour?: string
   children: ReactNode
   /** Zone fixe en bas d'écran (bouton principal). */
   pied?: ReactNode
@@ -19,6 +21,7 @@ export function Cadre({
   titre,
   onRetour,
   libelleRetour = 'Retour',
+  iconeRetour = '←',
   children,
   pied,
   couleur,
@@ -37,7 +40,7 @@ export function Cadre({
             aria-label={libelleRetour}
             className="grid size-12 place-items-center rounded-full bg-surface text-2xl active:scale-90"
           >
-            ←
+            {iconeRetour}
           </button>
         ) : (
           <span className="size-12" aria-hidden="true" />
