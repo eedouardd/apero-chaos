@@ -14,7 +14,7 @@ description: Rédiger ou relire des cartes, questions, mots ou gages pour l'app 
 
 ## Axes obligatoires pour chaque carte
 - Reprendre les valeurs de `ton`, `intensite` et `tags` déjà utilisées dans le projet (ne pas en inventer de nouvelles sans raison).
-- `tags` (physique, intime, gênant, culture, rapidité…) servent au filtrage selon les profils des joueurs.
+- `tags` (`physique`, `intime`, `genant`, `alcool`…) servent au filtrage selon les profils des joueurs. Ils s'écrivent sans accent, exactement comme dans le code : `genant`, jamais « gênant », sinon la carte n'est pas filtrée.
 - `minJoueurs` quand la carte en demande plusieurs.
 - Toute pénalité exprimée en **gorgées** (1 à 3 en soft, jusqu'à 5 en hard).
 - Une version gage doit être possible pour le mode Sans alcool.

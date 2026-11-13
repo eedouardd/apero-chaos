@@ -8,7 +8,7 @@ description: Checklist pour ajouter ou modifier un jeu dans l'app Apéro Chaos s
 ## 1. Comprendre l'existant
 - Lire CLAUDE.md et PROGRESS.md.
 - Repérer comment un jeu existant est branché : définition du jeu, moteur de cartes, filtrage par ton, intensité et profils, recommandations, récap de fin.
-- Réutiliser les modules partagés (moteur de cartes, paquet de 52 cartes virtuel, chrono, vote) plutôt que dupliquer.
+- Réutiliser les modules partagés (moteur de cartes, paquet de 52 cartes virtuel, chrono, vote) s'ils existent, sinon les créer comme modules partagés, plutôt que dupliquer.
 
 ## 2. Concevoir et planifier
 - Faire concevoir ou critiquer le jeu par le sous-agent `game-designer`.
