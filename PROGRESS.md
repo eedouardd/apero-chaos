@@ -7,7 +7,7 @@ Dernière mise à jour : 13 novembre 2026
 - Nom : **Apéro Chaos**. Dossier du projet : `~/Developer/apero-chaos` (hors iCloud).
 - Dépôt GitHub public prévu sur le compte `eedouardd`, adresse finale `https://eedouardd.github.io/apero-chaos/`.
 - 8 jeux : les 6 du cahier des charges + **La Bombe** + **Vrai ou Bluff**.
-- Stack : Vite, React, TypeScript, Tailwind CSS 4, Vitest. `vite-plugin-pwa` est installé mais pas encore configuré.
+- Stack : Vite, React, TypeScript, Tailwind CSS 4, Vitest, `vite-plugin-pwa`.
 - Git, Node et l'outil GitHub (`gh`) étaient déjà installés : rien à installer.
 
 ## Étape 1 : terminée et vérifiée dans le navigateur
@@ -43,11 +43,19 @@ Les 8 jeux sont jouables, avec 80 cartes ou plus chacun (644 au total) :
 
 Les cartes ont été écrites à partir de fichiers compacts convertis en JSON ; les fichiers JSON de `src/contenu` sont désormais la seule source, à modifier à la main.
 
+## Étapes 4 et 5 : faites
+
+- Design néon, animations (retournement de carte, roue, bombe), sons synthétisés et vibrations, bouton pour couper le son. Mise en page vérifiée en 320 et 375 px de large.
+- PWA : `vite-plugin-pwa` configuré dans `vite.config.ts` (manifeste, icônes, 26 fichiers mis en cache pour le hors ligne).
+- Guide dans `README.md` : installer sur iPhone et Android, modifier les cartes.
+
+**Non vérifié** : l'installation sur l'écran d'accueil et le mode hors ligne n'ont pas pu être testés dans le navigateur intégré de Claude (il refuse les service workers). Le fichier `sw.js` est bien généré et sa liste de fichiers est complète.
+
 ## Prochaine étape
 
-Étape 4 : finitions (relecture du design sur téléphone, sons, animations), puis étape 5 : PWA (installation sur l'écran d'accueil, hors ligne) et guide final (installer sur iPhone et Android, modifier les cartes).
+À faire par Edouard sur un vrai téléphone : ouvrir https://eedouardd.github.io/apero-chaos/, l'ajouter à l'écran d'accueil, couper le réseau et relancer l'app, vérifier les sons et vibrations, jouer une partie de chaque jeu.
 
-À vérifier par Edouard : test sur un vrai téléphone, surtout les sons et les vibrations.
+Idées pour plus tard : cartes personnalisées, packs premium payants, durée de partie réglable.
 
 ## Commandes utiles
 
