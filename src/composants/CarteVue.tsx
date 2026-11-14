@@ -1,5 +1,6 @@
 import { useGardeToucher } from '../effets/garde'
 import type { CarteJouee, Segment } from '../types'
+import { BandeauPenalite } from './BandeauPenalite'
 import { TexteCarte } from './TexteCarte'
 
 interface Props {
@@ -50,6 +51,13 @@ export function CarteVue({ jouee, consigne, indice, onSuivante }: Props) {
         <span className="mb-3 block border-t-2 border-trait pt-3 text-lg text-texte">
           <TexteCarte segments={consigne} />
         </span>
+      ) : null}
+      {jouee.penalite ? (
+        <BandeauPenalite
+          penalite={jouee.penalite}
+          carteSeule={consigne === undefined}
+          className="mb-3"
+        />
       ) : null}
       <span className="self-center text-base text-texte-doux">{indice}</span>
     </button>

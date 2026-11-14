@@ -4,7 +4,8 @@ import { reglesDuJeu, type DefinitionJeu } from '../jeux/catalogue'
 import { useEcranAllume } from '../effets/ecran'
 import { useRetourEnPartie } from '../effets/retour'
 import { gagesAutorises, tirerGage } from '../moteur/gages'
-import type { Joueur, Reglages } from '../types'
+import type { Joueur, Reglages, TailleGage } from '../types'
+import { LIBELLES_GAGE } from '../moteur/penalites'
 import { Bouton } from './Bouton'
 import { Cadre } from './Cadre'
 import { Fenetre } from './Fenetre'
@@ -34,6 +35,8 @@ interface Props {
   onPause?: (enPause: boolean) => void
   /** Revenir à la carte précédente (jeux de cartes) ; `null` quand on est sur la première. */
   onPrecedent?: (() => void) | null
+  /** Taille du gage à tirer : celle de la carte en cours (petit, moyen ou gros). */
+  tailleGage?: TailleGage
   /** Masque le bouton « Gage » (ex. pendant qu'on se passe le téléphone en secret). */
   sansGage?: boolean
   /** « Terminer la partie » depuis la pause : va au récap. */
@@ -56,6 +59,7 @@ export function CadrePartie({
   actionPied,
   actionsPause,
   sansGage = false,
+  tailleGage,
   onPrecedent,
   onPause,
   onTerminer,
@@ -124,7 +128,7 @@ export function CadrePartie({
             {sansGage ? null : (
               <Bouton
                 variante="contour"
-                onClick={() => setGage(tirerGage(gages, gage))}
+                onClick={() => setGage(tirerGage(gages, gage, Math.random, tailleGage))}
               >
                 🎭 Gage
               </Bouton>
@@ -230,7 +234,10 @@ export function CadrePartie({
       ) : null}
 
       {gage !== null ? (
-        <Fenetre titre="Gage" onFermer={fermerGage}>
+        <Fenetre
+          titre={tailleGage === undefined ? 'Gage' : LIBELLES_GAGE[tailleGage]}
+          onFermer={fermerGage}
+        >
           <p className="pb-5 text-center text-2xl leading-snug font-semibold">
             {gage}
           </p>
@@ -238,7 +245,7 @@ export function CadrePartie({
             <Bouton onClick={fermerGage}>C’est fait</Bouton>
             <Bouton
               variante="discret"
-              onClick={() => setGage(tirerGage(gages, gage))}
+              onClick={() => setGage(tirerGage(gages, gage, Math.random, tailleGage))}
             >
               Un autre gage
             </Bouton>

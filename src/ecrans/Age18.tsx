@@ -32,7 +32,13 @@ export function Age18({ sansAlcool, onConfirmer, onRetour }: Props) {
           ) : (
             <li>🍻 On boit par gorgées, jamais cul sec, et chacun à son rythme.</li>
           )}
-          <li>🙅 On peut toujours refuser un défi ou une question.</li>
+          <li>
+            🙅 Personne n’est obligé de faire une carte. Refuser coûte{' '}
+            {sansAlcool
+              ? 'le gage affiché sur la carte'
+              : 'les gorgées affichées sur la carte : 1 pour une carte facile, jamais plus de 5 pour une difficile'}
+            .
+          </li>
           {sansAlcool ? null : (
             <>
               <li>🚗 Celui qui conduit ne boit pas.</li>

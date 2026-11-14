@@ -11,6 +11,7 @@ export type Intensite = 'soft' | 'normal' | 'hard'
  * - `physique` : demande de bouger (réservé aux joueurs qui aiment les défis physiques)
  * - `intime` et `genant` : réservés aux joueurs qui acceptent les questions gênantes
  * - `alcool` : n'a de sens qu'avec de l'alcool (retirée en mode Sans alcool)
+ * - `repete` : la pénalité tombe plusieurs fois (« à chaque oubli… »), elle reste hors échelle
  * Les autres étiquettes sont libres (ex. `mime`, `chant`) et servent de repère.
  */
 export type Tag = string
@@ -31,8 +32,34 @@ export interface Reglages {
   intensite: Intensite
   /** Mode Sans alcool : toutes les gorgées deviennent des gages. */
   sansAlcool: boolean
-  /** « Boire = gorgées » : jamais de verres ni de shots. */
-  gorgeesSeulement: boolean
+}
+
+/**
+ * Difficulté d'une carte, qui fixe sa pénalité (voir `src/moteur/penalites.ts`) :
+ * 1 = facile (1 gorgée), 2 = moyenne (2-3), 3 = difficile (4-5),
+ * 4 = les plus dures (5 gorgées à distribuer, gage collectif ou règle imposée).
+ */
+export type Difficulte = 1 | 2 | 3 | 4
+
+/** Taille du gage qui remplace les gorgées en mode Sans alcool. */
+export type TailleGage = 'petit' | 'moyen' | 'gros'
+
+/** Ce que coûte une carte quand on la rate ou qu'on la refuse. Affiché en bandeau. */
+export interface Penalite {
+  /** Nombre de gorgées, entre 1 et 5 (3 au plus en intensité Soft). */
+  gorgees: number
+  taille: TailleGage
+  /** Vrai si la carte fait distribuer des gorgées au lieu d'en boire. */
+  distribue: boolean
+  /**
+   * Vrai pour une carte « les plus dures » sans nombre écrit (gage collectif, règle imposée) :
+   * les gorgées ne sont dues qu'en cas de refus.
+   */
+  speciale: boolean
+  /** Vrai si la pénalité tombe à chaque fois (« à chaque oubli… »), toujours petite. */
+  repete: boolean
+  /** Vrai si la pénalité est un gage (mode Sans alcool, ou joueur qui ne boit pas). */
+  enGage: boolean
 }
 
 /** Une carte telle qu'elle est écrite dans les fichiers JSON de `src/contenu`. */
@@ -49,6 +76,8 @@ export interface Carte {
   intensite: Intensite
   tags: Tag[]
   minJoueurs: number
+  /** Absente : pénalité tirée autour du nombre écrit dans la carte (±1 gorgée). */
+  difficulte?: Difficulte
   /** Sous-titre affiché en haut de la carte (ex. « Défi », « Vérité », « Règle »). */
   categorie?: string
   /** Pour les règles temporaires : texte de la carte qui met fin à la règle. */
@@ -81,6 +110,8 @@ export interface CarteJouee {
   segments: Segment[]
   /** Gorgées attribuées par cette carte (pour le récap de fin). */
   gorgees: number
+  /** Pénalité de la carte. `null` pour les cartes sans enjeu (fin de règle). */
+  penalite: Penalite | null
 }
 
 export type IdJeu =
@@ -123,7 +154,6 @@ export const REGLAGES_PAR_DEFAUT: Reglages = {
   ton: 'pimente',
   intensite: 'normal',
   sansAlcool: false,
-  gorgeesSeulement: true,
 }
 
 export const NB_JOUEURS_MIN = 2

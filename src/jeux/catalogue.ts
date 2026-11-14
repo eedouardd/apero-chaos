@@ -38,6 +38,11 @@ export interface DefinitionJeu {
   categorie: CategorieJeu
   /** Rappel affiché sous chaque carte (mêmes jetons que les cartes : {boivent:1}…). */
   consigne?: string
+  /**
+   * Ajout à la consigne quand la carte coûte plus que le plafond des pénalités de groupe :
+   * ce que prend le joueur qui se retrouve seul.
+   */
+  consigneSeul?: string
   /** Affiche un bouton « 3-2-1 » pour voter tous en même temps. */
   decompte?: boolean
   /** Ce qu'on compte dans le récap : « cartes » par défaut, « manches » pour certains jeux. */
@@ -63,13 +68,13 @@ export const CATALOGUE: DefinitionJeu[] = [
     regles: [
       'Le téléphone passe de main en main : lisez la carte à voix haute.',
       'Le joueur dont le prénom s’affiche fait le défi ou répond à la question.',
-      'Refuser, c’est permis : on boit les gorgées indiquées (ou on fait un gage).',
+      'Refuser, c’est permis : ça coûte les gorgées du bandeau 🍺 (1 à 5 selon la difficulté), ou un gage.',
       'Les règles « Jusqu’à nouvel ordre » durent jusqu’à la carte qui les annule.',
     ],
     reglesSansAlcool: [
       'Le téléphone passe de main en main : lisez la carte à voix haute.',
       'Le joueur dont le prénom s’affiche fait le défi ou répond à la question.',
-      'Refuser, c’est permis : on fait un gage à la place.',
+      'Refuser, c’est permis : ça coûte le gage annoncé par la carte (petit, moyen ou gros).',
       'Les règles « Jusqu’à nouvel ordre » durent jusqu’à la carte qui les annule.',
     ],
     pret: true,
@@ -89,8 +94,8 @@ export const CATALOGUE: DefinitionJeu[] = [
     plutotIntime: true,
     regles: [
       'Lisez la phrase « Je n’ai jamais… » à voix haute.',
-      'Tous ceux qui l’ont déjà fait boivent une gorgée (ou font un gage).',
-      'Si une seule personne boit, elle raconte l’histoire.',
+      'Tous ceux qui l’ont déjà fait boivent les gorgées affichées sous la carte.',
+      'Si une seule personne boit, elle prend les gorgées du bandeau 🍺 et raconte l’histoire.',
       'Personne n’est obligé de se justifier… mais c’est plus drôle.',
     ],
     reglesSansAlcool: [
@@ -101,6 +106,7 @@ export const CATALOGUE: DefinitionJeu[] = [
     ],
     accrocheSansAlcool: 'Ceux qui l’ont déjà fait se dénoncent… et passent au gage.',
     consigne: 'Ceux qui l’ont déjà fait {boivent:1}.',
+    consigneSeul: 'Seul à l’avoir fait ? {bois:1} et raconte.',
     pret: true,
   },
   {
@@ -119,7 +125,7 @@ export const CATALOGUE: DefinitionJeu[] = [
     regles: [
       'Lisez la question, puis lancez le décompte 3-2-1.',
       'À zéro, chacun pointe du doigt la personne la plus susceptible de le faire.',
-      'La personne la plus désignée prend 2 gorgées.',
+      'La personne la plus désignée prend les gorgées du bandeau 🍺 : plus la question pique, plus ça coûte.',
       'En cas d’égalité, les ex æquo trinquent ensemble.',
     ],
     reglesSansAlcool: [
@@ -128,7 +134,7 @@ export const CATALOGUE: DefinitionJeu[] = [
       'La personne la plus désignée fait un gage.',
       'En cas d’égalité, les ex æquo font le gage ensemble.',
     ],
-    consigne: '3, 2, 1… pointez ! La personne la plus désignée prend {gorgees:2}.',
+    consigne: '3, 2, 1… pointez ! La personne la plus désignée prend {gorgees:1}.',
     decompte: true,
     pret: true,
   },
@@ -168,7 +174,7 @@ export const CATALOGUE: DefinitionJeu[] = [
     regles: [
       'Deux joueurs sont tirés au sort et s’affrontent sur un mini-défi.',
       'Le reste du groupe arbitre et désigne le vainqueur. À deux, vous tranchez vous-mêmes.',
-      'Touchez le prénom du gagnant : le perdant boit (ou fait un gage).',
+      'Touchez le prénom du gagnant : le perdant boit les gorgées du bandeau 🍺 (ou fait un gage).',
       'Égalité ? On rejoue le duel, ou les deux trinquent.',
     ],
     reglesSansAlcool: [
@@ -196,7 +202,7 @@ export const CATALOGUE: DefinitionJeu[] = [
     regles: [
       'Lisez le dilemme à voix haute.',
       'À 3-2-1, chacun annonce son choix en même temps (A ou B).',
-      'Ceux qui sont en minorité boivent une gorgée. Égalité : personne ne boit. À deux : si vous n’êtes pas d’accord, vous buvez tous les deux.',
+      'Ceux qui sont en minorité boivent les gorgées affichées sous la carte. Égalité : personne ne boit. À deux : si vous n’êtes pas d’accord, vous buvez tous les deux.',
       'Interdit de répondre « ni l’un ni l’autre ».',
     ],
     reglesSansAlcool: [
@@ -206,7 +212,8 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Interdit de répondre « ni l’un ni l’autre ».',
     ],
     consigne:
-      '3, 2, 1… votez ! La minorité prend {gorgees:1}, personne en cas d’égalité. À deux : en cas de désaccord, chacun prend {gorgees:1}.',
+      '3, 2, 1… votez ! Ceux de la minorité {boivent:1}, personne en cas d’égalité. À deux : pas d’accord ? {buvez:1} tous les deux.',
+    consigneSeul: 'Seul contre tous ? {bois:1}.',
     decompte: true,
     pret: true,
   },
@@ -227,7 +234,7 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Une catégorie s’affiche et le minuteur caché démarre.',
       'Donnez une réponse, puis passez vite le téléphone à votre voisin.',
       'Interdit de répéter une réponse déjà donnée.',
-      'Celui qui tient le téléphone quand la bombe explose boit (ou fait un gage).',
+      'Celui qui tient le téléphone quand la bombe explose boit les gorgées du bandeau 🍺 (ou fait un gage).',
     ],
     reglesSansAlcool: [
       'Une catégorie s’affiche et le minuteur caché démarre.',
@@ -253,8 +260,8 @@ export const CATALOGUE: DefinitionJeu[] = [
     regles: [
       'Le joueur désigné raconte une anecdote sur le thème de la carte : vraie ou totalement inventée.',
       'À 3-2-1, les autres votent : pouce en l’air pour « vrai », pouce en bas pour « bluff ».',
-      'Le conteur révèle la vérité : ceux qui se sont trompés boivent.',
-      'Si tout le monde a trouvé, c’est le conteur qui boit.',
+      'Le conteur révèle la vérité : ceux qui se sont trompés boivent les gorgées affichées sous la carte.',
+      'Si tout le monde a trouvé, c’est le conteur qui boit les gorgées du bandeau 🍺.',
     ],
     reglesSansAlcool: [
       'Le joueur désigné raconte une anecdote sur le thème de la carte : vraie ou totalement inventée.',
@@ -263,7 +270,7 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Si tout le monde a trouvé, c’est le conteur qui fait le gage.',
     ],
     consigne:
-      'Histoire vraie ou inventée, au choix. Les autres votent : ceux qui se trompent prennent {gorgees:1}. Tout le monde a trouvé ? {j1} prend {gorgees:2}.',
+      'Histoire vraie ou inventée, au choix. Les autres votent : ceux qui se trompent {boivent:1}. Tout le monde a trouvé ? {j1} prend {gorgees:1}.',
     decompte: true,
     pret: true,
   },
@@ -284,7 +291,7 @@ export const CATALOGUE: DefinitionJeu[] = [
       'Chacun regarde son mot secret en cachette. Tous ont le même, sauf l’imposteur, qui a un mot proche sans le savoir.',
       'À tour de rôle, dites un seul mot en lien avec le vôtre. Interdit de dire son mot ou un mot déjà cité.',
       'Débattez, puis touchez ensemble le prénom du suspect. À partir de 8 joueurs, il y a deux imposteurs.',
-      'Imposteur démasqué : il boit (ou fait un gage). Raté : ce sont les innocents qui boivent.',
+      'Imposteur démasqué : il boit (ou fait un gage), et plus les mots étaient proches, plus ça coûte. Raté : ce sont les innocents qui boivent.',
     ],
     reglesSansAlcool: [
       'Chacun regarde son mot secret en cachette. Tous ont le même, sauf l’imposteur, qui a un mot proche sans le savoir.',
@@ -314,7 +321,7 @@ export const JEU_MES_CARTES: DefinitionJeu = {
   regles: [
     'Le téléphone passe de main en main : lisez la carte à voix haute.',
     'Si un prénom s’affiche, c’est ce joueur qui s’y colle.',
-    'Refuser, c’est permis : on boit les gorgées indiquées (ou on fait un gage).',
+    'Refuser, c’est permis : ça coûte les gorgées du bandeau 🍺, ou un gage.',
   ],
   reglesSansAlcool: [
     'Le téléphone passe de main en main : lisez la carte à voix haute.',

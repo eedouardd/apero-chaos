@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'vitest'
 import type { Carte, Joueur, Reglages } from '../types'
 import {
-  ajusterGorgees,
   carteAutorisee,
   choisirJoueurs,
+  cartesDuMoment,
   construirePaquet,
+  etalerDifficultes,
+  rendreConsigne,
   filtrerCartes,
   nbJoueursCibles,
   rendreCarte,
@@ -37,7 +39,6 @@ const REGLAGES: Reglages = {
   ton: 'hard',
   intensite: 'hard',
   sansAlcool: false,
-  gorgeesSeulement: true,
 }
 
 const LEA = joueur('Léa')
@@ -125,32 +126,24 @@ describe('choisirJoueurs', () => {
   })
 })
 
-describe('ajusterGorgees', () => {
-  test('adapte les gorgées à l’intensité, entre 1 et 5', () => {
-    expect(ajusterGorgees(2, 'soft')).toBe(1)
-    expect(ajusterGorgees(2, 'normal')).toBe(2)
-    expect(ajusterGorgees(2, 'hard')).toBe(3)
-    expect(ajusterGorgees(1, 'soft')).toBe(1)
-    expect(ajusterGorgees(5, 'hard')).toBe(5)
-  })
-})
-
 describe('rendreCarte', () => {
   const normal: Reglages = { ...REGLAGES, intensite: 'normal' }
+  /** Hasard neutre : une carte sans difficulté garde le nombre écrit. */
+  const neutre = { alea: aleaFixe() }
 
   test('remplace les prénoms et les gorgées', () => {
-    const rendue = rendreCarte(carte({ texte: '{j1}, {bois:2}. {j2} rit.' }), [LEA, TOM], normal)
+    const rendue = rendreCarte(carte({ texte: '{j1}, {bois:2}. {j2} rit.' }), [LEA, TOM], normal, neutre)
     expect(TEXTE(rendue)).toBe('Léa, bois 2 gorgées. Tom rit.')
     expect(rendue.gorgees).toBe(2)
   })
 
   test('met une majuscule à la boisson en début de phrase seulement', () => {
-    const rendue = rendreCarte(carte({ texte: '{j1}, raté ? {bois:2}. Refus : {bois:2}.' }), [LEA], normal)
+    const rendue = rendreCarte(carte({ texte: '{j1}, raté ? {bois:2}. Refus : {bois:2}.' }), [LEA], normal, neutre)
     expect(TEXTE(rendue)).toBe('Léa, raté ? Bois 2 gorgées. Refus : bois 2 gorgées.')
   })
 
   test('accorde « gorgée » au singulier', () => {
-    const rendue = rendreCarte(carte({ texte: '{j1}, {bois:1}.' }), [LEA], normal)
+    const rendue = rendreCarte(carte({ texte: '{j1}, {bois:1}.' }), [LEA], normal, neutre)
     expect(TEXTE(rendue)).toBe('Léa, bois 1 gorgée.')
   })
 
@@ -160,21 +153,146 @@ describe('rendreCarte', () => {
       carte({ texte: '{j1}, {bois:2}. Les autres {boivent:1} et prennent {gorgees:3}.' }),
       [LEA],
       sans,
+      neutre,
     )
     expect(TEXTE(rendue)).toBe('Léa, fais un gage. Les autres font un gage et prennent un gage.')
   })
 
   test('donne un gage au joueur qui ne boit pas, même avec alcool', () => {
     const sobre = joueur('Zoé', { boitAlcool: false })
-    const rendue = rendreCarte(carte({ texte: '{j1}, {bois:3}.' }), [sobre], normal)
+    const rendue = rendreCarte(carte({ texte: '{j1}, {bois:3}.' }), [sobre], normal, neutre)
     expect(TEXTE(rendue)).toBe('Zoé, fais un gage.')
   })
 
-  test('ne parle de demi-verre que si « boire = gorgées » est coupé', () => {
-    const texte = '{j1}, {bois:4}.'
-    expect(TEXTE(rendreCarte(carte({ texte }), [LEA], normal))).toBe('Léa, bois 4 gorgées.')
-    const libre: Reglages = { ...normal, gorgeesSeulement: false }
-    expect(TEXTE(rendreCarte(carte({ texte }), [LEA], libre))).toBe('Léa, bois un demi-verre.')
+  test('la difficulté fixe la pénalité : 1, puis 2-3, puis 4-5', () => {
+    const texte = '{j1}, {bois:2}.'
+    const bas = { alea: () => 0 }
+    const haut = { alea: () => 0.99 }
+    const rendre = (difficulte: 1 | 2 | 3 | 4, options: { alea: () => number }) =>
+      rendreCarte(carte({ texte, difficulte }), [LEA], normal, options).penalite?.gorgees
+    expect(rendre(1, haut)).toBe(1)
+    expect([rendre(2, bas), rendre(2, haut)]).toEqual([2, 3])
+    expect([rendre(3, bas), rendre(3, haut)]).toEqual([4, 5])
+    expect(rendre(4, bas)).toBe(5)
+    expect(TEXTE(rendreCarte(carte({ texte, difficulte: 3 }), [LEA], normal, haut))).toBe(
+      'Léa, bois 5 gorgées.',
+    )
+  })
+
+  test('en Soft, jamais plus de 3 gorgées, et le difficile coûte plus que le facile', () => {
+    const soft: Reglages = { ...normal, intensite: 'soft' }
+    const gorgees = ([1, 2, 3, 4] as const).map(
+      (difficulte) =>
+        rendreCarte(carte({ difficulte }), [LEA], soft, { alea: () => 0.99 }).penalite?.gorgees,
+    )
+    expect(gorgees).toEqual([1, 2, 3, 3])
+  })
+
+  test('sans difficulté : le nombre écrit, à une gorgée près', () => {
+    const tirages = [0, 0.5, 0.99].map(
+      (valeur) =>
+        rendreCarte(carte({ texte: '{j1}, {bois:3}.' }), [LEA], normal, { alea: () => valeur })
+          .penalite?.gorgees,
+    )
+    expect(tirages).toEqual([2, 3, 4])
+  })
+
+  test('les autres nombres de la carte suivent la pénalité, sans dépasser 5', () => {
+    const duo = carte({ texte: '{j1} : gagné, {distribue:3}. Perdu, {bois:2}.', difficulte: 3 })
+    const rendue = rendreCarte(duo, [LEA], normal, { alea: () => 0 })
+    expect(TEXTE(rendue)).toBe('Léa : gagné, distribue 5 gorgées. Perdu, bois 4 gorgées.')
+    expect(rendue.penalite).toMatchObject({ gorgees: 4, distribue: false, enGage: false })
+  })
+
+  test('une pénalité de groupe ne dépasse pas 3 gorgées (2 en Soft)', () => {
+    const groupe = carte({ texte: 'Tous les autres {boivent:2}.', difficulte: 3 })
+    expect(TEXTE(rendreCarte(groupe, [], normal, { alea: () => 0.99 }))).toBe(
+      'Tous les autres boivent 3 gorgées.',
+    )
+    const soft: Reglages = { ...normal, intensite: 'soft' }
+    expect(TEXTE(rendreCarte(groupe, [], soft))).toBe('Tous les autres boivent 2 gorgées.')
+  })
+
+  test('une pénalité qui se répète reste hors échelle', () => {
+    const regle = carte({
+      texte: '{j1}, à chaque oubli tu prends {gorgees:1}.',
+      difficulte: 3,
+      tags: ['repete'],
+    })
+    const rendue = rendreCarte(regle, [LEA], REGLAGES, { alea: () => 0.99 })
+    expect(TEXTE(rendue)).toBe('Léa, à chaque oubli tu prends 1 gorgée.')
+    expect(rendue.penalite).toMatchObject({ gorgees: 1, repete: true, taille: 'petit' })
+  })
+
+  test('une carte qui ne fait que distribuer l’annonce dans sa pénalité', () => {
+    const cadeau = carte({ texte: '{j1}, {distribue:5}.', difficulte: 4 })
+    const rendue = rendreCarte(cadeau, [LEA], normal)
+    expect(rendue.penalite).toMatchObject({ gorgees: 5, distribue: true, speciale: false })
+    const regle = carte({ texte: 'Jusqu’à la fin, {j1} est le chef.', difficulte: 4 })
+    expect(rendreCarte(regle, [LEA], normal).penalite).toMatchObject({ gorgees: 5, speciale: true })
+    expect(rendue.gorgees).toBe(0)
+  })
+
+  test('sans alcool : la pénalité est un gage, petit, moyen ou gros', () => {
+    const sans: Reglages = { ...normal, sansAlcool: true }
+    const tailles = ([1, 2, 3, 4] as const).map(
+      (difficulte) => rendreCarte(carte({ difficulte }), [LEA], sans).penalite,
+    )
+    expect(tailles.map((p) => p?.taille)).toEqual(['petit', 'moyen', 'gros', 'gros'])
+    expect(tailles.every((p) => p?.enGage)).toBe(true)
+  })
+})
+
+describe('rendreConsigne', () => {
+  const normal: Reglages = { ...REGLAGES, intensite: 'normal' }
+
+  test('la consigne prend la pénalité de la carte, plafonnée pour le groupe', () => {
+    const consigne = 'Ceux qui se trompent {boivent:1}. Tous ont trouvé ? {j1} prend {gorgees:1}.'
+    const rendue = rendreConsigne(consigne, [LEA], normal, 5)
+    expect(rendue.segments.map((s) => s.valeur).join('')).toBe(
+      'Ceux qui se trompent boivent 3 gorgées. Tous ont trouvé ? Léa prend 5 gorgées.',
+    )
+  })
+
+  test('ne dépasse jamais le plafond de l’intensité', () => {
+    const soft: Reglages = { ...normal, intensite: 'soft' }
+    const rendue = rendreConsigne('{j1} {boit:1}.', [LEA], soft, 5)
+    expect(rendue.segments.map((s) => s.valeur).join('')).toBe('Léa boit 3 gorgées.')
+    expect(rendue.gorgees).toBe(3)
+  })
+})
+
+describe('etalerDifficultes', () => {
+  const niveaux = (cartes: Carte[]) => cartes.map((c) => c.difficulte)
+  const paquet = (...difficultes: (1 | 2 | 3 | 4)[]) =>
+    difficultes.map((difficulte, i) => carte({ id: `c${i}`, difficulte }))
+
+  test('pas de carte extrême dans les cinq premières', () => {
+    const ordre = etalerDifficultes(paquet(4, 4, 1, 1, 1, 2, 2, 1))
+    expect(niveaux(ordre).slice(0, 5)).not.toContain(4)
+    const debut = niveaux(etalerDifficultes(paquet(3, 3, 1, 2, 1))).slice(0, 2)
+    expect(debut).toEqual([1, 2])
+    expect(ordre).toHaveLength(8)
+  })
+
+  test('jamais deux cartes difficiles d’affilée quand c’est évitable', () => {
+    const ordre = niveaux(etalerDifficultes(paquet(3, 3, 3, 1, 2, 1, 2)))
+    for (let i = 1; i < ordre.length; i += 1) {
+      expect((ordre[i] ?? 0) >= 3 && (ordre[i - 1] ?? 0) >= 3).toBe(false)
+    }
+  })
+
+  test('tirage carte par carte (La Roue) : mêmes règles, sans jamais bloquer', () => {
+    const cartes = paquet(1, 2, 3, 4)
+    expect(niveaux(cartesDuMoment(cartes, 0, undefined))).toEqual([1, 2])
+    expect(niveaux(cartesDuMoment(cartes, 3, cartes[0]))).toEqual([1, 2, 3])
+    expect(niveaux(cartesDuMoment(cartes, 6, cartes[2]))).toEqual([1, 2])
+    expect(niveaux(cartesDuMoment(cartes, 6, cartes[0]))).toEqual([1, 2, 3, 4])
+    expect(cartesDuMoment(paquet(4, 4), 0, undefined)).toHaveLength(2)
+  })
+
+  test('ne perd aucune carte quand il n’y a que du difficile', () => {
+    expect(etalerDifficultes(paquet(4, 3, 4))).toHaveLength(3)
   })
 })
 

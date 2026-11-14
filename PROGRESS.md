@@ -75,7 +75,30 @@ Relecture complète par `qa-testeur`, `auteur-contenu` et `ux-designer`, puis co
 - Mode Sans alcool : règles, accroches et écran +18 ne parlent plus de boire.
 - Écran maintenu allumé pendant toutes les parties.
 
-**Laissé de côté (mineur)** : doublons de joueurs dans la sauvegarde, prénoms en emojis, libellés du récap, barre d'avancement avec les règles temporaires, mémoire des cartes vues perdue au rechargement, vibration liée au son, piège à focus des fenêtres, lint dans la CI, reprise d'une partie après fermeture. L'option « boire = gorgées » coupée affiche encore « un demi-verre » : à trancher en phase 2.
+**Laissé de côté (mineur)** : doublons de joueurs dans la sauvegarde, prénoms en emojis, libellés du récap, barre d'avancement avec les règles temporaires, mémoire des cartes vues perdue au rechargement, vibration liée au son, piège à focus des fenêtres, lint dans la CI, reprise d'une partie après fermeture. « Un demi-verre » et l'option « boire = gorgées » ont été supprimés en phase 2.
+
+## Étape 7, phase 2 : échelle de pénalités selon la difficulté (14 novembre 2026)
+
+Retour du test sur téléphone : le nombre de gorgées était toujours le même dans un même jeu. Chaque carte a maintenant une difficulté, qui fixe ce que coûte un raté ou un refus.
+
+| Difficulté | Avec alcool | Sans alcool |
+|---|---|---|
+| 1, facile | 1 gorgée | petit gage |
+| 2, moyenne | 2 ou 3 gorgées | gage moyen |
+| 3, difficile | 4 ou 5 gorgées | gros gage |
+| 4, les plus dures | 5 gorgées à distribuer, gage collectif ou règle jusqu'à la fin | gros gage ou règle |
+
+- **Moteur** (`src/moteur/penalites.ts`, `src/moteur/cartes.ts`) : jamais plus de 5 gorgées, 3 en Soft (Soft prend le bas de la fourchette, Normal tire au hasard, Hard prend le haut). Une pénalité de groupe (« ceux qui… boivent ») est plafonnée à 3, 2 en Soft ; seul un joueur isolé prend la pénalité pleine. Carte sans difficulté (« Mes cartes ») : nombre écrit ±1. Cartes « à chaque oubli… » (tag `repete`) : toujours 1 gorgée ou un petit gage.
+- **Dosage d'une partie** : on commence par des cartes faciles ou moyennes, pas de carte de niveau 4 dans les cinq premières, jamais deux cartes difficiles d'affilée (jeux de cartes et La Roue).
+- **Affichage** : bandeau « 🍺 ×N » sur chaque carte (`src/composants/BandeauPenalite.tsx`), vert 1, orange 2-3, rouge 4-5. En Sans alcool : « Petit gage », « Gage moyen », « Gros gage », et le bouton Gage tire un gage de cette taille (champ `taille` dans `gages.json`). Variantes : « Distribue 🍺 ×5 », « à chaque fois », « Refus : 🍺 ×5 » pour un gage collectif ou une règle.
+- **Duel et La Bombe** : le perdant boit la pénalité de la carte au lieu de 2 gorgées fixes. **L'Imposteur** : l'imposteur démasqué boit d'autant plus que les mots étaient proches (1 à 3 en Soft, 2 à 4 en Normal, 3 à 5 en Hard) ; groupe trompé : 2 par innocent sur une paire facile, 1 sinon.
+- **Supprimé** : « un demi-verre » et l'option « boire = gorgées ». L'écran +18 dit que personne n'est obligé de faire une carte et que refuser coûte les gorgées affichées (ou le gage).
+- **Contenu** : difficulté attribuée aux 742 cartes par `auteur-contenu`, 64 gages avec leur taille, 12 difficultés de paires de L'Imposteur corrigées, 4 cartes Hard trop explicites réécrites (`tp-074`, `vb-080`, `bo-076`, `bo-080`), toutes les cartes Hard portent `intime`. 26 cartes ajoutées, surtout de niveau 4.
+- 169 tests verts, dont un par jeu qui vérifie plusieurs niveaux de difficulté et le mélange des pénalités dans une partie. Skill `apero-chaos-contenu` et README mis à jour.
+
+**Laissé de côté après le passage de `qa-testeur`** : en Hard, 40 à 47 % des cartes coûtent encore 1 gorgée (beaucoup de cartes faciles) et les valeurs 2 et 4 ne sortent jamais ; des cartes sur le thème « gueule de bois » restent visibles en Sans alcool ; garde-fou par joueur (plafonner après plusieurs grosses pénalités de suite) non fait.
+
+**Non vérifié** : rendu du bandeau sur un vrai téléphone.
 
 ## Étape 6 : quatre nouveaux jeux (en cours)
 
@@ -85,7 +108,7 @@ Ordre prévu : L'Imposteur, Quiz du bar, Le Roi, Le Bus. Un jeu est fini avant d
 
 - 4 à 12 joueurs, 5 manches, 1 imposteur (2 à partir de 8 joueurs). Chacun voit son mot en maintenant le doigt appuyé ; l'imposteur ne sait pas qu'il l'est.
 - Tour de mots à l'oral, débat de 90 secondes (chrono gelé pendant la pause), vote collectif sur un prénom avec confirmation.
-- Barème : imposteur démasqué, 2, 3 ou 4 gorgées selon l'intensité ; groupe trompé, 1 ou 2 gorgées par innocent. En mode Sans alcool, les imposteurs désignent un innocent qui fait un gage. Jamais plus de 4 gorgées par manche.
+- Barème : voir la phase 2 (selon la difficulté de la paire). En mode Sans alcool, les imposteurs désignent un innocent qui fait un gage. Jamais plus de 5 gorgées par manche.
 - `src/moteur/imposteur.ts` (logique pure, 23 tests), `src/jeux/JeuImposteur.tsx`, `src/jeux/RevelationImposteur.tsx`, `src/contenu/imposteur.json` (160 paires : 70 tout public, 55 pimenté, 35 hard).
 - Récap de fin propre au jeu : score du groupe, Caméléon, Bouc émissaire, Démasqué.
 

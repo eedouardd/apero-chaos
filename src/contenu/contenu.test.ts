@@ -3,12 +3,13 @@
 
 import { describe, expect, test } from 'vitest'
 import { CATALOGUE } from '../jeux/catalogue'
-import { filtrerCartes } from '../moteur/cartes'
-import type { Joueur } from '../types'
+import { construirePaquet, filtrerCartes } from '../moteur/cartes'
+import { gagesAutorises } from '../moteur/gages'
+import type { Carte, Joueur, Reglages } from '../types'
 import gages from './gages.json'
 import imposteur from './imposteur.json'
 import { INTERDITS } from './interdits'
-import { CARTES, PAIRES_IMPOSTEUR, cartesDuJeu, problemesCarte, problemesPaire } from './index'
+import { CARTES, GAGES, PAIRES_IMPOSTEUR, cartesDuJeu, problemesCarte, problemesPaire } from './index'
 import { cleMot, paireAutorisee } from '../moteur/imposteur'
 
 const TOUTES_LES_CARTES = Object.values(CARTES).flat()
@@ -21,6 +22,49 @@ const FICHIERS: Record<string, { texte: string; id: string }[]> = {
 }
 
 const NB_CARTES_MIN = 80
+/** Un niveau de difficulté « compte » dans un jeu s'il pèse au moins cette part des cartes. */
+const PART_MIN_NIVEAU = 0.1
+const NB_NIVEAUX_MIN = 3
+/** Les cartes « les plus dures » restent rares. */
+const PART_MAX_EXTREME = 0.15
+
+const PRUDENT: Reglages = { ton: 'tout-public', intensite: 'soft', sansAlcool: true }
+
+function groupePrudent(nb: number): Joueur[] {
+  return Array.from({ length: nb }, (_, i) => ({
+    id: `p${i}`,
+    prenom: `P${i}`,
+    defisPhysiques: false,
+    questionsIntimes: false,
+    boitAlcool: false,
+  }))
+}
+
+function groupeFetard(nb: number): Joueur[] {
+  return groupePrudent(nb).map((j) => ({
+    ...j,
+    defisPhysiques: true,
+    questionsIntimes: true,
+    boitAlcool: true,
+  }))
+}
+
+/** Niveaux de difficulté qui pèsent au moins 10 % de ces cartes. */
+function niveauxRepresentes(cartes: Carte[]): number[] {
+  return [1, 2, 3, 4].filter(
+    (niveau) =>
+      cartes.filter((c) => c.difficulte === niveau).length >= cartes.length * PART_MIN_NIVEAU,
+  )
+}
+
+/** Hasard reproductible (générateur congruentiel), pour simuler des parties dans les tests. */
+function aleaGraine(graine: number): () => number {
+  let etat = graine
+  return () => {
+    etat = (etat * 1664525 + 1013904223) % 4294967296
+    return etat / 4294967296
+  }
+}
 
 describe('contenu des cartes', () => {
   test.each(Object.entries(FICHIERS))('%s : aucune formulation interdite', (_nom, cartes) => {
@@ -40,6 +84,19 @@ describe('contenu des cartes', () => {
     expect(TOUTES_LES_CARTES.length).toBeGreaterThanOrEqual(640)
     for (const carte of TOUTES_LES_CARTES) {
       expect(problemesCarte(carte), `carte ${carte.id}`).toEqual([])
+    }
+  })
+
+  test('chaque carte a une difficulté de 1 à 4', () => {
+    for (const carte of TOUTES_LES_CARTES) {
+      expect([1, 2, 3, 4], `carte ${carte.id}`).toContain(carte.difficulte)
+    }
+  })
+
+  test('une pénalité qui se répète est écrite à 1 gorgée', () => {
+    for (const carte of TOUTES_LES_CARTES.filter((c) => c.tags.includes('repete'))) {
+      const nombres = [...carte.texte.matchAll(/:(\d)\}/g)].map((m) => Number(m[1]))
+      expect(Math.max(0, ...nombres), `carte ${carte.id}`).toBeLessThanOrEqual(1)
     }
   })
 
@@ -68,22 +125,59 @@ describe('jeux prêts', () => {
   test.each(prets.map((jeu) => [jeu.nom, jeu] as const))(
     '%s : jouable même en Tout public + Soft + Sans alcool avec un groupe prudent',
     (_nom, jeu) => {
-      const prudents: Joueur[] = Array.from({ length: jeu.minJoueurs }, (_, i) => ({
-        id: `p${i}`,
-        prenom: `P${i}`,
-        defisPhysiques: false,
-        questionsIntimes: false,
-        boitAlcool: false,
-      }))
-      const cartes = filtrerCartes(cartesDuJeu(jeu.id), prudents, {
-        ton: 'tout-public',
-        intensite: 'soft',
-        sansAlcool: true,
-        gorgeesSeulement: true,
-      })
+      const cartes = filtrerCartes(cartesDuJeu(jeu.id), groupePrudent(jeu.minJoueurs), PRUDENT)
       expect(cartes.length).toBeGreaterThanOrEqual(12)
     },
   )
+
+  test.each(prets.map((jeu) => [jeu.nom, jeu] as const))(
+    '%s : plusieurs niveaux de difficulté, même pour un groupe prudent',
+    (_nom, jeu) => {
+      const toutes = cartesDuJeu(jeu.id)
+      expect(niveauxRepresentes(toutes).length).toBeGreaterThanOrEqual(NB_NIVEAUX_MIN)
+      const extremes = toutes.filter((c) => c.difficulte === 4).length
+      expect(extremes).toBeLessThanOrEqual(toutes.length * PART_MAX_EXTREME)
+      const prudentes = filtrerCartes(toutes, groupePrudent(jeu.minJoueurs), PRUDENT)
+      expect(niveauxRepresentes(prudentes).length).toBeGreaterThanOrEqual(NB_NIVEAUX_MIN)
+    },
+  )
+
+  test.each(prets.map((jeu) => [jeu.nom, jeu] as const))(
+    '%s : une partie mélange les pénalités, sans jamais dépasser 5 gorgées (3 en Soft)',
+    (_nom, jeu) => {
+      const joueurs = groupeFetard(Math.max(4, jeu.minJoueurs))
+      for (const intensite of ['soft', 'normal', 'hard'] as const) {
+        const reglages: Reglages = { ton: 'hard', intensite, sansAlcool: false }
+        for (const graine of [1, 2, 3, 4, 5]) {
+          const paquet = construirePaquet(cartesDuJeu(jeu.id), joueurs, reglages, {
+            taille: 25,
+            alea: aleaGraine(graine),
+          })
+          const gorgees = paquet.flatMap((c) => (c.penalite ? [c.penalite.gorgees] : []))
+          expect(Math.max(...gorgees)).toBeLessThanOrEqual(intensite === 'soft' ? 3 : 5)
+          expect(Math.min(...gorgees)).toBeGreaterThanOrEqual(1)
+          expect(new Set(gorgees).size, `${intensite}, graine ${graine}`).toBeGreaterThanOrEqual(3)
+        }
+      }
+    },
+  )
+})
+
+describe('gages', () => {
+  test('chaque gage a une taille : petit, moyen ou gros', () => {
+    expect(GAGES.length).toBe(gages.length)
+    for (const gage of GAGES) {
+      expect(['petit', 'moyen', 'gros'], `gage ${gage.id}`).toContain(gage.taille)
+    }
+  })
+
+  test('assez de gages de chaque taille pour un groupe prudent en Tout public', () => {
+    const autorises = gagesAutorises(GAGES, groupePrudent(3), PRUDENT)
+    for (const taille of ['petit', 'moyen', 'gros']) {
+      const nb = autorises.filter((gage) => gage.taille === taille).length
+      expect(nb, `gages ${taille}`).toBeGreaterThanOrEqual(8)
+    }
+  })
 })
 
 describe('paires de L’Imposteur', () => {
@@ -105,20 +199,8 @@ describe('paires de L’Imposteur', () => {
   })
 
   test('assez de paires de chaque difficulté pour un groupe prudent en Tout public', () => {
-    const prudents: Joueur[] = Array.from({ length: 4 }, (_, i) => ({
-      id: `p${i}`,
-      prenom: `P${i}`,
-      defisPhysiques: false,
-      questionsIntimes: false,
-      boitAlcool: false,
-    }))
     const autorisees = PAIRES_IMPOSTEUR.filter((paire) =>
-      paireAutorisee(paire, prudents, {
-        ton: 'tout-public',
-        intensite: 'soft',
-        sansAlcool: true,
-        gorgeesSeulement: true,
-      }),
+      paireAutorisee(paire, groupePrudent(4), PRUDENT),
     )
     for (const difficulte of [1, 2, 3]) {
       const nb = autorisees.filter((paire) => paire.difficulte === difficulte).length

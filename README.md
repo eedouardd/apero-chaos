@@ -19,7 +19,7 @@ Une fois ouverte une première fois avec du réseau, l'app fonctionne hors ligne
 Les cartes sont dans `src/contenu`, un fichier par jeu (`defis-verites.json`, `je-nai-jamais.json`, etc.). Les gages sont dans `gages.json`. Une carte ressemble à ceci :
 
 ```json
-{ "id": "dv-101", "categorie": "Défi", "texte": "{j1}, imite {j2}. Raté ? {bois:2}.", "ton": "tout-public", "intensite": "soft", "tags": ["mime"], "minJoueurs": 3 }
+{ "id": "dv-101", "categorie": "Défi", "texte": "{j1}, imite {j2}. Raté ? {bois:2}.", "ton": "tout-public", "intensite": "soft", "difficulte": 2, "tags": ["mime"], "minJoueurs": 3 }
 ```
 
 | Champ | Valeurs | Rôle |
@@ -28,12 +28,13 @@ Les cartes sont dans `src/contenu`, un fichier par jeu (`defis-verites.json`, `j
 | `texte` | libre | ce qui s'affiche |
 | `ton` | `tout-public`, `pimente`, `hard` | la carte sort si le ton choisi est au moins celui-ci |
 | `intensite` | `soft`, `normal`, `hard` | idem pour l'intensité |
+| `difficulte` | `1`, `2`, `3`, `4` | fixe la pénalité : voir « Échelle de pénalités » |
 | `tags` | liste de mots | voir ci-dessous |
 | `minJoueurs` | nombre | nombre de joueurs minimum |
 | `categorie` | facultatif | étiquette en haut de la carte |
 | `texteFin` | facultatif | pour une règle « Jusqu'à nouvel ordre » : la carte qui l'annule |
 
-**Tags qui comptent** : `physique` (jamais donnée à un joueur qui refuse les défis physiques), `intime` et `genant` (jamais données à un joueur qui refuse les questions gênantes), `alcool` (retirée en mode Sans alcool). Les autres tags sont libres.
+**Tags qui comptent** : `physique` (jamais donnée à un joueur qui refuse les défis physiques), `intime` et `genant` (jamais données à un joueur qui refuse les questions gênantes), `alcool` (retirée en mode Sans alcool), `repete` (pénalité qui tombe plusieurs fois, « à chaque oubli… » : écris-la à 1 gorgée, elle n'est jamais augmentée). Les autres tags sont libres.
 
 **Mots magiques dans le texte** :
 
@@ -41,7 +42,18 @@ Les cartes sont dans `src/contenu`, un fichier par jeu (`defis-verites.json`, `j
 - `{bois:2}`, `{boit:2}` : « bois 2 gorgées », « boit 2 gorgées ». Ils s'adressent à `{j1}`.
 - `{boivent:1}`, `{buvez:1}`, `{distribue:2}`, `{gorgees:2}` : « boivent 1 gorgée », « buvez 1 gorgée », « distribue 2 gorgées », « 2 gorgées ».
 
-Le nombre s'adapte tout seul à l'intensité, et tout devient un gage en mode Sans alcool ou pour un joueur qui ne boit pas.
+Tout devient un gage en mode Sans alcool ou pour un joueur qui ne boit pas.
+
+**Échelle de pénalités** : la pénalité est ce que coûte un raté ou un refus. Elle s'affiche dans un bandeau « 🍺 ×N » sur la carte (vert 1, orange 2-3, rouge 4-5).
+
+| `difficulte` | Avec alcool | Sans alcool |
+|---|---|---|
+| 1, facile | 1 gorgée | petit gage |
+| 2, moyenne | 2 ou 3 gorgées | gage moyen |
+| 3, difficile | 4 ou 5 gorgées | gros gage |
+| 4, les plus dures | 5 gorgées à distribuer, gage collectif ou règle jusqu'à la fin | gros gage ou règle |
+
+Jamais plus de 5 gorgées d'un coup, 3 en intensité Soft, et 3 au plus quand plusieurs joueurs boivent en même temps. Le premier nombre « je bois » de la carte reçoit la pénalité et les autres nombres suivent ; écris-le au bas de la fourchette (1, 2, 4 ou 5). Une carte sans `difficulte` (comme celles de « Mes cartes ») garde son nombre écrit, à une gorgée près. Les gages de `gages.json` ont une `taille` : `petit`, `moyen` ou `gros`.
 
 **Règles de sécurité, même en Hard** : rien sur la conduite, pas de mélange d'alcools, pas de « cul sec » ni de shots, aucun défi dangereux, rien d'humiliant ou de discriminant. `npm test` refuse les formulations interdites les plus courantes.
 

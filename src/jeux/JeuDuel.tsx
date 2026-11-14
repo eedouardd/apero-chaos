@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Bouton } from '../composants/Bouton'
 import { CadrePartie, PartieVide } from '../composants/CadrePartie'
 import { ChoixJoueur } from '../composants/ChoixJoueur'
+import { BandeauPenalite } from '../composants/BandeauPenalite'
 import { TexteCarte } from '../composants/TexteCarte'
 import { cartesDuJeu } from '../contenu'
 import { useGardeToucher } from '../effets/garde'
@@ -49,7 +50,7 @@ export function JeuDuel({ jeu, joueurs, reglages, onQuitter, onFin }: PropsParti
     if (perdant === undefined || choixTropTot()) return
     jouerSon('victoire')
     vibrer([40, 40, 100])
-    setVerdict(sanctionPerdant(duel.carte, perdant, [gagnant], reglages))
+    setVerdict(sanctionPerdant(duel, perdant, [gagnant], reglages))
   }
 
   function duelSuivant() {
@@ -76,6 +77,7 @@ export function JeuDuel({ jeu, joueurs, reglages, onQuitter, onFin }: PropsParti
       total={paquet.length}
       onTerminer={() => terminer(verdict ? [...verdicts, verdict] : verdicts)}
       onQuitter={onQuitter}
+      tailleGage={duel.penalite?.taille}
     >
       <div
         key={duel.carte.id}
@@ -93,6 +95,9 @@ export function JeuDuel({ jeu, joueurs, reglages, onQuitter, onFin }: PropsParti
         <p className="my-auto py-4 text-[1.45rem] leading-snug font-semibold">
           <TexteCarte segments={duel.segments} />
         </p>
+        {duel.penalite ? (
+          <BandeauPenalite penalite={verdict?.penalite ?? duel.penalite} className="mb-3" />
+        ) : null}
 
         <div aria-live="polite">
           {verdict === null ? (

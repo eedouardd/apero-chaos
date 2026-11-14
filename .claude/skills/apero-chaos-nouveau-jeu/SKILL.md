@@ -17,7 +17,7 @@ description: Checklist pour ajouter ou modifier un jeu dans l'app Apéro Chaos s
 ## 3. Chaque jeu doit avoir
 - Nombre de joueurs min/max et intégration aux recommandations.
 - Écran de règles avant la partie.
-- Respect des réglages : ton, intensité, mode Sans alcool (gorgées → gages), option boire = gorgées, écran +18 selon les options, profils des joueurs.
+- Respect des réglages : ton, intensité, mode Sans alcool (gorgées → gages), échelle de pénalités selon la difficulté (bandeau 🍺 ×N), écran +18 selon les options, profils des joueurs.
 - Couleur d'accent propre, animations cohérentes avec le reste, sons qu'on peut couper.
 - Récap de fin de partie.
 - Contenu dans un JSON séparé, écrit par le sous-agent `auteur-contenu` en suivant le skill `apero-chaos-contenu`.

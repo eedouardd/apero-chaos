@@ -46,7 +46,6 @@ const REGLAGES: Reglages = {
   ton: 'pimente',
   intensite: 'normal',
   sansAlcool: false,
-  gorgeesSeulement: true,
 }
 
 /** Hasard prévisible : renvoie les valeurs données, en boucle. */
@@ -197,41 +196,57 @@ describe('L’Imposteur : verdict', () => {
     ordre: joueurs,
   }
 
-  test('imposteur démasqué : lui seul boit, 2, 3 ou 4 gorgées selon l’intensité', () => {
+  test('imposteur démasqué : lui seul boit, d’autant plus que la paire était dure', () => {
     const normal = rendreVerdict(manche, 'j2', joueurs, REGLAGES)
     expect(normal?.demasque).toBe(true)
-    expect(normal?.gorgeesParJoueur).toEqual({ j2: 3 })
-    expect(texte(normal?.segments ?? [])).toBe('J2 boit 3 gorgées.')
-    const soft = rendreVerdict(manche, 'j2', joueurs, { ...REGLAGES, intensite: 'soft' })
-    expect(soft?.gorgeesParJoueur).toEqual({ j2: 2 })
-    const hard = rendreVerdict(manche, 'j5', joueurs, { ...REGLAGES, intensite: 'hard' })
-    expect(hard?.gorgeesParJoueur).toEqual({ j5: 4 })
-  })
-
-  test('jamais de « demi-verre », même si « boire = gorgées » est décoché', () => {
-    const hard = rendreVerdict(manche, 'j2', joueurs, {
-      ...REGLAGES,
-      intensite: 'hard',
-      gorgeesSeulement: false,
-    })
-    expect(texte(hard?.segments ?? [])).toBe('J2 boit 4 gorgées.')
+    expect(normal?.gorgeesParJoueur).toEqual({ j2: 2 })
+    expect(texte(normal?.segments ?? [])).toBe('J2 boit 2 gorgées.')
+    const bareme = (['soft', 'normal', 'hard'] as const).map((intensite) =>
+      ([1, 2, 3] as const).map(
+        (difficulte) =>
+          rendreVerdict(
+            { ...manche, paire: paire('p', { difficulte }) },
+            'j2',
+            joueurs,
+            { ...REGLAGES, intensite },
+          )?.gorgeesParJoueur.j2,
+      ),
+    )
+    expect(bareme).toEqual([
+      [1, 2, 3],
+      [2, 3, 4],
+      [3, 4, 5],
+    ])
   })
 
   test('groupe trompé : chaque innocent boit, les imposteurs ne boivent pas', () => {
     const rate = rendreVerdict(manche, 'j0', joueurs, REGLAGES)
     expect(rate?.demasque).toBe(false)
     expect(rate?.gageADesigner).toBe(false)
-    expect(rate?.gorgeesParJoueur).toEqual({ j0: 1, j1: 1, j3: 1, j4: 1, j6: 1, j7: 1 })
+    // Paire facile : se tromper coûte 2 gorgées par innocent, 1 seule sur une paire dure.
+    expect(rate?.gorgeesParJoueur).toEqual({ j0: 2, j1: 2, j3: 2, j4: 2, j6: 2, j7: 2 })
+    expect(texte(rate?.segments ?? [])).toBe('Les innocents boivent 2 gorgées.')
+    const dure = { ...manche, paire: paire('p', { difficulte: 3 }) }
+    expect(rendreVerdict(dure, 'j0', joueurs, REGLAGES)?.gorgeesParJoueur.j1).toBe(1)
     const hard = rendreVerdict(manche, 'j0', joueurs, { ...REGLAGES, intensite: 'hard' })
-    expect(hard?.gorgeesParJoueur.j1).toBe(2)
+    expect(hard?.gorgeesParJoueur.j1).toBe(3)
+    const soft = rendreVerdict(manche, 'j0', joueurs, { ...REGLAGES, intensite: 'soft' })
+    expect(soft?.gorgeesParJoueur.j1).toBe(1)
   })
 
-  test('jamais plus de 4 gorgées par joueur et par manche', () => {
+  test('jamais plus de 5 gorgées par joueur et par manche, 3 en Soft', () => {
     for (const intensite of ['soft', 'normal', 'hard'] as const) {
-      for (const accuse of ['j0', 'j2']) {
-        const verdict = rendreVerdict(manche, accuse, joueurs, { ...REGLAGES, intensite })
-        for (const nb of Object.values(verdict?.gorgeesParJoueur ?? {})) {
-          expect(nb).toBeLessThanOrEqual(4)
+      for (const difficulte of [1, 2, 3] as const) {
+        for (const accuse of ['j0', 'j2']) {
+          const verdict = rendreVerdict(
+            { ...manche, paire: paire('p', { difficulte }) },
+            accuse,
+            joueurs,
+            { ...REGLAGES, intensite },
+          )
+          for (const nb of Object.values(verdict?.gorgeesParJoueur ?? {})) {
+            expect(nb).toBeLessThanOrEqual(intensite === 'soft' ? 3 : 5)
+          }
         }
       }
     }
@@ -279,7 +294,7 @@ describe('L’Imposteur : verdict', () => {
       boitAlcool: manche.imposteurs.includes(j.id),
     }))
     const verdict = rendreVerdict(manche, 'j2', innocentsSobres, REGLAGES)
-    expect(texte(verdict?.segments ?? [])).toBe('J2 boit 3 gorgées.')
+    expect(texte(verdict?.segments ?? [])).toBe('J2 boit 2 gorgées.')
   })
 
   test('renvoie null si le prénom accusé n’est pas dans la partie', () => {
@@ -312,10 +327,11 @@ describe('L’Imposteur : récap', () => {
     const resultats = [resultat('j0', 'j0'), resultat('j2', 'j1'), resultat('j2', 'j1')]
     const stats = statsImposteur(resultats, joueurs)
     expect(stats.cartesJouees).toBe(3)
-    expect(stats.parJoueur.j0).toEqual({ cartes: 1, gorgees: 3 + 1 + 1 })
+    // Paires faciles : 2 gorgées pour l'imposteur démasqué, 2 par innocent quand le groupe se trompe.
+    expect(stats.parJoueur.j0).toEqual({ cartes: 1, gorgees: 2 + 2 + 2 })
     // Un imposteur qui passe entre les gouttes ne boit pas.
     expect(stats.parJoueur.j2).toEqual({ cartes: 2, gorgees: 0 })
-    expect(stats.parJoueur.j1.gorgees).toBe(2)
+    expect(stats.parJoueur.j1.gorgees).toBe(4)
     const titres = Object.fromEntries(
       (stats.trophees ?? []).map((t) => [t.titre, t.prenom]),
     )

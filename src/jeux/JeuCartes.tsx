@@ -6,12 +6,32 @@ import { Decompte } from '../composants/Decompte'
 import { cartesDuJeu } from '../contenu'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
-import { construirePaquet, rendreCarte } from '../moteur/cartes'
+import { construirePaquet, plafondGroupe, rendreConsigne } from '../moteur/cartes'
+import type { CarteJouee, Reglages, Segment } from '../types'
+import type { DefinitionJeu } from './catalogue'
 import { calculerStats } from '../moteur/recap'
 import { cartesVues, noterCartesVues } from './memoire'
 
 /** Nombre de cartes d'une partie. */
 const TAILLE_PAQUET = 25
+
+/**
+ * Consigne du jeu sous la carte, avec la pénalité de cette carte. Quand la carte coûte
+ * plus que le plafond des pénalités de groupe, on précise ce que prend un joueur seul.
+ */
+function consigneDeLaCarte(
+  jeu: DefinitionJeu,
+  jouee: CarteJouee,
+  reglages: Reglages,
+): Segment[] | undefined {
+  if (jeu.consigne === undefined || jouee.penalite === null) return undefined
+  const { gorgees, enGage } = jouee.penalite
+  const base = rendreConsigne(jeu.consigne, jouee.joueurs, reglages, gorgees).segments
+  const seulPaiePlus = !enGage && gorgees > plafondGroupe(reglages.intensite)
+  if (jeu.consigneSeul === undefined || !seulPaiePlus) return base
+  const seul = rendreConsigne(jeu.consigneSeul, [], reglages, gorgees).segments
+  return [...base, { type: 'texte', valeur: ' ' }, ...seul]
+}
 
 /**
  * Jeu de cartes générique : « Défis & Vérités », « Je n'ai jamais », « Qui pourrait… »,
@@ -68,11 +88,7 @@ export function JeuCartes({
 
   const derniere = index + 1 >= paquet.length
   // La consigne du jeu passe par le même moteur que les cartes (gorgées ou gages).
-  const consigne =
-    jeu.consigne === undefined
-      ? undefined
-      : rendreCarte({ ...jouee.carte, texte: jeu.consigne }, jouee.joueurs, reglages)
-          .segments
+  const consigne = consigneDeLaCarte(jeu, jouee, reglages)
 
   return (
     <CadrePartie
@@ -84,6 +100,7 @@ export function JeuCartes({
       onTerminer={() => terminer(indexMax + 1)}
       onQuitter={onQuitter}
       onPrecedent={index === 0 ? null : () => setIndex(index - 1)}
+      tailleGage={jouee.penalite?.taille}
       actionPied={
         jeu.decompte ? (
           <Bouton onClick={() => setDecompte(true)}>3-2-1 !</Bouton>

@@ -3,6 +3,7 @@ import { CATALOGUE } from '../jeux/catalogue'
 import { lireSauvegarde } from '../stockage/stockage'
 import { REGLAGES_PAR_DEFAUT, type CarteJouee, type Joueur } from '../types'
 import { ageRequis } from './age'
+import { rendreCarte } from './cartes'
 import { gagesAutorises, tirerGage } from './gages'
 import { creerJoueur, reglagesEffectifs } from './joueurs'
 import { angleRoue, dureeMeche, sanctionPerdant, tirerAction, tirerJoueurRoue } from './manches'
@@ -99,6 +100,17 @@ describe('gages', () => {
     expect(tirerGage(gages.slice(0, 2), 'Sage', () => 0)).toBe('Sportif')
   })
 
+  test('tire un gage de la taille demandée, ou n’importe lequel s’il n’y en a pas', () => {
+    const gages = [
+      { id: 'a', texte: 'petit', ton: 'tout-public' as const, taille: 'petit' as const },
+      { id: 'b', texte: 'gros', ton: 'tout-public' as const, taille: 'gros' as const },
+    ]
+    for (const valeur of [0, 0.5, 0.99]) {
+      expect(tirerGage(gages, null, () => valeur, 'gros')).toBe('gros')
+    }
+    expect(['petit', 'gros']).toContain(tirerGage(gages, null, () => 0, 'moyen'))
+  })
+
   test('propose un gage de secours si la liste est vide', () => {
     expect(tirerGage([], null)).not.toBe('')
   })
@@ -112,6 +124,7 @@ describe('récap de fin', () => {
     joueurs,
     segments: [],
     gorgees,
+    penalite: null,
   })
 
   test('additionne cartes et gorgées par joueur', () => {
@@ -192,11 +205,17 @@ describe('jeux à manches', () => {
   test('le perdant boit, ou fait un gage s’il ne boit pas', () => {
     const sobre = joueur('Zoé', { boitAlcool: false })
     const texte = (c: CarteJouee) => c.segments.map((s) => s.valeur).join('')
-    const avec = sanctionPerdant(carte('d'), joueur('Tom'), [sobre], REGLAGES_PAR_DEFAUT)
-    expect(texte(avec)).toBe('Tom boit 2 gorgées.')
+    const tom = joueur('Tom')
+    const manche = rendreCarte({ ...carte('d'), difficulte: 3 }, [tom, sobre], REGLAGES_PAR_DEFAUT, {
+      alea: () => 0,
+    })
+    const avec = sanctionPerdant(manche, tom, [sobre], REGLAGES_PAR_DEFAUT)
+    expect(texte(avec)).toBe('Tom boit 4 gorgées.')
     expect(avec.joueurs.map((j) => j.prenom)).toEqual(['Tom', 'Zoé'])
-    expect(avec.gorgees).toBe(2)
-    expect(texte(sanctionPerdant(carte('d'), sobre, [], REGLAGES_PAR_DEFAUT))).toBe('Zoé fait un gage.')
+    expect(avec.gorgees).toBe(4)
+    const sansAlcool = sanctionPerdant(manche, sobre, [], REGLAGES_PAR_DEFAUT)
+    expect(texte(sansAlcool)).toBe('Zoé fait un gage.')
+    expect(sansAlcool.penalite).toMatchObject({ enGage: true, taille: 'gros' })
   })
 })
 

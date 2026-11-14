@@ -1,15 +1,14 @@
 // Logique des jeux à manches (La Roue, Duel, La Bombe). Fonctions pures, testées.
 
 import type { Carte, CarteJouee, Joueur, Reglages } from '../types'
-import { joueurAccepte, rendreCarte, type Alea } from './cartes'
+import { joueurAccepte, rendreConsigne, type Alea } from './cartes'
+import { GORGEES_PAR_DEFAUT } from './penalites'
 
 /** Nombre de tours complets que fait la roue avant de s'arrêter. */
 const TOURS_DE_ROUE = 5
 /** Durée de la mèche de la bombe, en secondes. */
 const MECHE_MIN_S = 12
 const MECHE_MAX_S = 35
-/** Gorgées de base pour le perdant d'un duel ou d'une bombe. */
-const GORGEES_PERDANT = 2
 
 /**
  * Angle final de la roue (en degrés) pour que la part du joueur `index`
@@ -82,20 +81,21 @@ export function dureeMeche(alea: Alea = Math.random): number {
 }
 
 /**
- * Sanction du perdant d'une manche : « Léa boit 2 gorgées » (ou un gage).
- * Le perdant est placé en premier pour que les gorgées lui soient comptées.
+ * Sanction du perdant d'une manche : « Léa boit 4 gorgées » (ou un gage), selon la
+ * pénalité de la carte jouée. Le perdant est placé en premier pour que les gorgées
+ * lui soient comptées.
  */
 export function sanctionPerdant(
-  carte: Carte,
+  manche: CarteJouee,
   perdant: Joueur,
   autres: Joueur[],
   reglages: Reglages,
 ): CarteJouee {
-  const sanction: Carte = {
-    ...carte,
-    texte: `{j1} {boit:${GORGEES_PERDANT}}.`,
-    categorie: 'Verdict',
-  }
-  const rendue = rendreCarte(sanction, [perdant], reglages)
-  return { ...rendue, carte, joueurs: [perdant, ...autres] }
+  const nb = manche.penalite?.gorgees ?? GORGEES_PAR_DEFAUT
+  const { segments, gorgees } = rendreConsigne('{j1} {boit:1}.', [perdant], reglages, nb)
+  const penalite =
+    manche.penalite === null
+      ? null
+      : { ...manche.penalite, enGage: reglages.sansAlcool || !perdant.boitAlcool }
+  return { ...manche, joueurs: [perdant, ...autres], segments, gorgees, penalite }
 }

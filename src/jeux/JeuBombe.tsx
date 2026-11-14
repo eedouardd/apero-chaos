@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Bouton } from '../composants/Bouton'
 import { CadrePartie, PartieVide } from '../composants/CadrePartie'
 import { ChoixJoueur } from '../composants/ChoixJoueur'
+import { BandeauPenalite } from '../composants/BandeauPenalite'
 import { TexteCarte } from '../composants/TexteCarte'
 import { cartesDuJeu } from '../contenu'
 import { useGardeToucher } from '../effets/garde'
@@ -81,7 +82,7 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
 
   function designerVictime(victime: Joueur) {
     if (suiteTropTot()) return
-    setVerdict(sanctionPerdant(manche.carte, victime, [], reglages))
+    setVerdict(sanctionPerdant(manche, victime, [], reglages))
     setPhase('verdict')
   }
 
@@ -107,6 +108,7 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
       total={paquet.length}
       onTerminer={() => terminer(verdict ? [...verdicts, verdict] : verdicts)}
       onQuitter={onQuitter}
+      tailleGage={manche.penalite?.taille}
       onPause={setEnPause}
       sansGage={phase === 'meche'}
     >
@@ -123,6 +125,12 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
         <p className="font-titre text-2xl leading-tight font-black text-accent">
           <TexteCarte segments={manche.segments} />
         </p>
+        {manche.penalite ? (
+          <BandeauPenalite
+            penalite={verdict?.penalite ?? manche.penalite}
+            className="w-full"
+          />
+        ) : null}
 
         <div className="my-auto grid place-items-center gap-3" aria-live="assertive">
           {phase === 'pret' ? (

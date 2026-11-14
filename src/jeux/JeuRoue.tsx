@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bouton } from '../composants/Bouton'
 import { CadrePartie, PartieVide } from '../composants/CadrePartie'
+import { BandeauPenalite } from '../composants/BandeauPenalite'
 import { TexteCarte } from '../composants/TexteCarte'
 import { cartesDuJeu } from '../contenu'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
-import { filtrerCartes, rendreCarte } from '../moteur/cartes'
+import { cartesDuMoment, filtrerCartes, rendreCarte } from '../moteur/cartes'
 import { angleRoue, tirerAction, tirerJoueurRoue } from '../moteur/manches'
 import { calculerStats } from '../moteur/recap'
 import type { CarteJouee } from '../types'
@@ -59,12 +60,18 @@ export function JeuRoue({ jeu, joueurs, reglages, onQuitter, onFin }: PropsParti
   function lancer() {
     if (phase === 'rotation' || historique.length >= NB_TOURS) return
     const dejaTirees = new Set(historique.map((h) => h.carte.id))
+    // On commence doucement, et jamais deux actions difficiles d'affilée.
+    const permises = cartesDuMoment(
+      cartes,
+      historique.length,
+      historique[historique.length - 1]?.carte,
+    )
     // On tire parmi les joueurs pour qui il reste au moins une action acceptable.
     const tirages = joueurs
       .map((joueur, index) => ({
         joueur,
         index,
-        carte: tirerAction(cartes, joueur, dejaTirees),
+        carte: tirerAction(permises, joueur, dejaTirees) ?? tirerAction(cartes, joueur, dejaTirees),
       }))
       .filter((tirage) => tirage.carte !== null)
     const designe = tirerJoueurRoue(
@@ -98,6 +105,7 @@ export function JeuRoue({ jeu, joueurs, reglages, onQuitter, onFin }: PropsParti
       total={NB_TOURS}
       onTerminer={() => onFin(calculerStats(historique))}
       onQuitter={onQuitter}
+      tailleGage={action?.penalite?.taille}
     >
       <div className="flex flex-1 flex-col items-center gap-4">
         <div className="relative w-full max-w-[19rem]">
@@ -172,6 +180,7 @@ export function JeuRoue({ jeu, joueurs, reglages, onQuitter, onFin }: PropsParti
               <p className="rounded-3xl bg-surface p-4 text-xl leading-snug font-semibold">
                 <TexteCarte segments={action.segments} />
               </p>
+              {action.penalite ? <BandeauPenalite penalite={action.penalite} carteSeule /> : null}
               <Bouton onClick={suite}>
                 {historique.length >= NB_TOURS ? 'Voir le récap' : 'Relancer la roue'}
               </Bouton>

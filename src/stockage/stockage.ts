@@ -75,7 +75,6 @@ function lireReglages(brut: unknown): Reglages {
       ? (brut.intensite as Intensite)
       : REGLAGES_PAR_DEFAUT.intensite,
     sansAlcool: brut.sansAlcool === true,
-    gorgeesSeulement: brut.gorgeesSeulement !== false,
   }
 }
 

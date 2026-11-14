@@ -17,9 +17,16 @@ const TONS: { valeur: Ton; libelle: string; detail: string }[] = [
 ]
 
 const INTENSITES: { valeur: Intensite; libelle: string; detail: string }[] = [
-  { valeur: 'soft', libelle: 'Soft', detail: 'Défis tranquilles, petites pénalités' },
+  { valeur: 'soft', libelle: 'Soft', detail: 'Défis tranquilles, 3 gorgées au maximum' },
+  { valeur: 'normal', libelle: 'Normal', detail: 'De 1 à 5 gorgées selon la carte' },
+  { valeur: 'hard', libelle: 'Hard', detail: 'Défis corsés, les cartes dures coûtent 5 gorgées' },
+]
+
+/** En mode Sans alcool, l'intensité ne parle que des défis : il n'y a plus de gorgées. */
+const INTENSITES_SANS_ALCOOL: typeof INTENSITES = [
+  { valeur: 'soft', libelle: 'Soft', detail: 'Défis tranquilles' },
   { valeur: 'normal', libelle: 'Normal', detail: 'Le bon équilibre' },
-  { valeur: 'hard', libelle: 'Hard', detail: 'Défis corsés, pénalités plus lourdes' },
+  { valeur: 'hard', libelle: 'Hard', detail: 'Défis corsés' },
 ]
 
 interface PropsInterrupteur {
@@ -84,7 +91,7 @@ export function Reglages({ reglages, onChange, onRetour, onSuivant }: Props) {
           </h2>
           <ChoixSegmente
             legende="Intensité de la partie"
-            options={INTENSITES}
+            options={reglages.sansAlcool ? INTENSITES_SANS_ALCOOL : INTENSITES}
             valeur={reglages.intensite}
             onChange={(intensite) => onChange({ ...reglages, intensite })}
           />
@@ -102,19 +109,11 @@ export function Reglages({ reglages, onChange, onRetour, onSuivant }: Props) {
               onChange({ ...reglages, sansAlcool: !reglages.sansAlcool })
             }
           />
-          {!reglages.sansAlcool ? (
-            <Interrupteur
-              libelle="Boire = gorgées"
-              detail="Jamais de verres entiers ni de shots"
-              actif={reglages.gorgeesSeulement}
-              onBasculer={() =>
-                onChange({
-                  ...reglages,
-                  gorgeesSeulement: !reglages.gorgeesSeulement,
-                })
-              }
-            />
-          ) : null}
+          <p className="text-sm text-texte-doux">
+            {reglages.sansAlcool
+              ? 'Petit, moyen ou gros gage : chaque carte annonce le sien.'
+              : 'Toujours en gorgées, de 1 à 5 selon la carte. Jamais de verre entier.'}
+          </p>
         </section>
       </div>
     </Cadre>

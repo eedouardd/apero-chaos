@@ -2,6 +2,7 @@
 // Uniquement des fonctions pures, testées dans imposteur.test.ts.
 
 import type {
+  Intensite,
   Joueur,
   PaireMots,
   Reglages,
@@ -9,7 +10,7 @@ import type {
   StatsPartie,
   Trophee,
 } from '../types'
-import { ajusterGorgees, melanger, NIVEAU_TON, type Alea } from './cartes'
+import { melanger, NIVEAU_TON, type Alea } from './cartes'
 import { rendreSanction } from './sanctions'
 
 /** Nombre de manches d'une partie. */
@@ -23,9 +24,30 @@ const SEUIL_DEUX_IMPOSTEURS = 8
 const SEUIL_UN_SEUL_TOUR = 7
 /** Difficulté visée à chaque manche : on commence facile, on finit serré. */
 const DIFFICULTE_PAR_MANCHE = [1, 2, 2, 3, 3]
-/** Gorgées de base (avant réglage d'intensité) : jamais plus de 4 par manche. */
-const GORGEES_DEMASQUE = 3
+/**
+ * Gorgées de l'imposteur démasqué, selon la difficulté de la paire (1, 2, 3) :
+ * plus les mots étaient proches, plus se faire prendre coûte cher.
+ */
+const GORGEES_DEMASQUE: Record<Intensite, Record<PaireMots['difficulte'], number>> = {
+  soft: { 1: 1, 2: 2, 3: 3 },
+  normal: { 1: 2, 2: 3, 3: 4 },
+  hard: { 1: 3, 2: 4, 3: 5 },
+}
+/** Gorgées de chaque innocent quand le groupe se trompe : rater une paire facile coûte plus. */
 const GORGEES_INNOCENTS = 1
+const GORGEES_INNOCENTS_PAIRE_FACILE = 2
+
+/** Gorgées de l'imposteur démasqué sur cette paire. */
+export function gorgeesDemasque(paire: PaireMots, intensite: Intensite): number {
+  return GORGEES_DEMASQUE[intensite][paire.difficulte]
+}
+
+/** Gorgées de chaque innocent quand le groupe accuse un innocent. */
+export function gorgeesInnocents(paire: PaireMots, intensite: Intensite): number {
+  if (intensite === 'soft') return GORGEES_INNOCENTS
+  const base = paire.difficulte === 1 ? GORGEES_INNOCENTS_PAIRE_FACILE : GORGEES_INNOCENTS
+  return intensite === 'hard' ? base + 1 : base
+}
 
 // Poids du choix d'une paire : plus le coût est bas, mieux c'est.
 const COUT_DEJA_VUE = 100
@@ -210,13 +232,16 @@ export function rendreVerdict(
   const accuse = joueurs.find((j) => j.id === idAccuse)
   if (accuse === undefined) return null
 
-  // Dans ce jeu on compte toujours en gorgées : jamais de « demi-verre ».
-  const regles: Reglages = { ...reglages, gorgeesSeulement: true }
   const demasque = manche.imposteurs.includes(idAccuse)
   const innocents = joueurs.filter((j) => !manche.imposteurs.includes(j.id))
 
   if (demasque) {
-    const sanction = rendreSanction(`{j1} {boit:${GORGEES_DEMASQUE}}.`, [accuse], regles)
+    const sanction = rendreSanction(
+      '{j1} {boit:1}.',
+      [accuse],
+      reglages,
+      gorgeesDemasque(manche.paire, reglages.intensite),
+    )
     return {
       accuse,
       demasque,
@@ -245,12 +270,8 @@ export function rendreVerdict(
     }
   }
 
-  const nb = ajusterGorgees(GORGEES_INNOCENTS, reglages.intensite)
-  const sanction = rendreSanction(
-    `Les innocents {boivent:${GORGEES_INNOCENTS}}.`,
-    [],
-    regles,
-  )
+  const nb = gorgeesInnocents(manche.paire, reglages.intensite)
+  const sanction = rendreSanction('Les innocents {boivent:1}.', [], reglages, nb)
   return {
     accuse,
     demasque,

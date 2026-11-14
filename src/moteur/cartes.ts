@@ -6,20 +6,39 @@ import type {
   CarteJouee,
   Intensite,
   Joueur,
+  Penalite,
   Reglages,
   Segment,
   Ton,
 } from '../types'
+import {
+  GORGEES_PAR_DEFAUT,
+  decalerGorgees,
+  gorgeesSansDifficulte,
+  gorgeesSelonDifficulte,
+  plafondGorgees,
+  tailleGage,
+  type Alea,
+} from './penalites'
 
-/** Générateur de hasard (entre 0 et 1). Remplaçable dans les tests. */
-export type Alea = () => number
+export type { Alea } from './penalites'
 
 export const NIVEAU_TON: Record<Ton, number> = { 'tout-public': 0, pimente: 1, hard: 2 }
 const NIVEAU_INTENSITE: Record<Intensite, number> = { soft: 0, normal: 1, hard: 2 }
 
-const GORGEES_MAX = 5
-/** À partir de ce nombre, on parle de « demi-verre » si l'option « boire = gorgées » est coupée. */
-const SEUIL_DEMI_VERRE = 4
+/** Une pénalité de groupe (« ceux qui… boivent ») ne dépasse jamais 3 gorgées, 2 en Soft. */
+const GORGEES_GROUPE_MAX = 3
+const GORGEES_GROUPE_MAX_SOFT = 2
+/** Carte dont la pénalité se répète (« à chaque oubli… ») : ses nombres restent tels quels. */
+export const TAG_REPETE = 'repete'
+/** Pas de carte « les plus dures » dans les premières cartes d'une partie. */
+const DEBUT_SANS_EXTREME = 5
+/** Une partie s'ouvre toujours sur des cartes faciles ou moyennes. */
+const DEBUT_SANS_DIFFICILE = 2
+/** Difficulté des cartes « les plus dures » : distribution, gage collectif ou règle. */
+const DIFFICULTE_EXTREME = 4
+/** Difficulté à partir de laquelle deux cartes ne se suivent pas. */
+const DIFFICULTE_FORTE = 3
 /** Une règle temporaire prend fin entre 4 et 6 cartes plus tard. */
 const DUREE_REGLE_MIN = 4
 const DUREE_REGLE_VARIATION = 3
@@ -107,24 +126,38 @@ export function choisirJoueurs(
   return candidats.slice(0, cibles)
 }
 
-/** Adapte un nombre de gorgées à l'intensité choisie (entre 1 et 5). */
-export function ajusterGorgees(base: number, intensite: Intensite): number {
-  const decalage = NIVEAU_INTENSITE[intensite] - 1
-  return Math.min(GORGEES_MAX, Math.max(1, base + decalage))
+const VERBES_GROUPE: readonly string[] = ['boivent', 'buvez']
+const VERBES_POUR_SOI: readonly string[] = ['bois', 'boit', 'boivent', 'buvez']
+const MOTIF_BOISSON = /^(bois|boit|boivent|buvez|distribue|gorgees):(\d+)$/
+
+interface Jeton {
+  verbe: string
+  nb: number
 }
 
-function quantite(nb: number, reglages: Reglages): string {
-  if (!reglages.gorgeesSeulement && nb >= SEUIL_DEMI_VERRE) return 'un demi-verre'
+function lireJetons(texte: string): Jeton[] {
+  return texte
+    .split(MOTIF_JETON)
+    .map((morceau) => MOTIF_BOISSON.exec(morceau))
+    .filter((trouve) => trouve !== null)
+    .map((trouve) => ({ verbe: trouve[1], nb: Number(trouve[2]) }))
+}
+
+/** Plafond d'une pénalité qui touche plusieurs joueurs à la fois. */
+export function plafondGroupe(intensite: Intensite): number {
+  return intensite === 'soft' ? GORGEES_GROUPE_MAX_SOFT : GORGEES_GROUPE_MAX
+}
+
+function borneGroupe(verbe: string, nb: number, intensite: Intensite): number {
+  return VERBES_GROUPE.includes(verbe) ? Math.min(nb, plafondGroupe(intensite)) : nb
+}
+
+function quantite(nb: number): string {
   return `${nb} gorgée${nb > 1 ? 's' : ''}`
 }
 
 /** Texte d'une action de boisson, ou du gage qui la remplace. */
-function texteBoisson(
-  verbe: string,
-  nb: number,
-  enGage: boolean,
-  reglages: Reglages,
-): string {
+function texteBoisson(verbe: string, nb: number, enGage: boolean): string {
   if (enGage) {
     switch (verbe) {
       case 'bois':
@@ -141,25 +174,25 @@ function texteBoisson(
         return 'un gage'
     }
   }
-  const combien = quantite(nb, reglages)
-  return verbe === 'gorgees' ? combien : `${verbe} ${combien}`
+  return verbe === 'gorgees' ? quantite(nb) : `${verbe} ${quantite(nb)}`
 }
 
 /**
- * Transforme le texte d'une carte en morceaux prêts à afficher :
- * prénoms des joueurs, actions de boisson (ou gages), texte simple.
+ * Transforme un texte à jetons en morceaux prêts à afficher. `gorgeesPour` donne
+ * le nombre final de chaque jeton de boisson.
  */
-export function rendreCarte(
-  carte: Carte,
+function rendreTexte(
+  texte: string,
   joueursChoisis: Joueur[],
   reglages: Reglages,
-): CarteJouee {
+  gorgeesPour: (jeton: Jeton) => number,
+): { segments: Segment[]; gorgees: number } {
   const premier = joueursChoisis[0]
   // « bois » et « boit » s'adressent au premier joueur : s'il ne boit pas, c'est un gage.
   const premierSansAlcool = premier !== undefined && !premier.boitAlcool
   let gorgees = 0
 
-  const segments: Segment[] = carte.texte
+  const segments: Segment[] = texte
     .split(MOTIF_JETON)
     .filter((morceau) => morceau !== '')
     .map((morceau): Segment => {
@@ -168,25 +201,84 @@ export function rendreCarte(
         const choisi = joueursChoisis[Number(joueur[1]) - 1]
         return { type: 'joueur', valeur: choisi?.prenom ?? 'Quelqu’un' }
       }
-      const boisson = /^(bois|boit|boivent|buvez|distribue|gorgees):(\d+)$/.exec(morceau)
+      const boisson = MOTIF_BOISSON.exec(morceau)
       if (boisson) {
         const verbe = boisson[1]
-        const nb = ajusterGorgees(Number(boisson[2]), reglages.intensite)
+        const nb = gorgeesPour({ verbe, nb: Number(boisson[2]) })
         const pourLePremier = verbe === 'bois' || verbe === 'boit'
-        const enGage =
-          reglages.sansAlcool || (pourLePremier && premierSansAlcool)
+        const enGage = reglages.sansAlcool || (pourLePremier && premierSansAlcool)
         if (pourLePremier && premier !== undefined) gorgees += enGage ? 1 : nb
-        return { type: 'boisson', valeur: texteBoisson(verbe, nb, enGage, reglages) }
+        return { type: 'boisson', valeur: texteBoisson(verbe, nb, enGage) }
       }
       return { type: 'texte', valeur: morceau }
     })
 
-  return {
-    carte,
-    joueurs: joueursChoisis,
-    segments: segments.map(majusculeApresPoint),
-    gorgees,
+  return { segments: segments.map(majusculeApresPoint), gorgees }
+}
+
+export interface OptionsRendu {
+  alea?: Alea
+  /** Pénalité déjà tirée pour cette carte : on la reprend au lieu de retirer au sort. */
+  gorgees?: number
+}
+
+/**
+ * Transforme une carte en carte jouée : prénoms, actions de boisson (ou gages) et pénalité.
+ * La pénalité suit la difficulté de la carte ; le premier jeton « je bois » la reçoit
+ * et les autres nombres de la carte sont décalés d'autant.
+ */
+export function rendreCarte(
+  carte: Carte,
+  joueursChoisis: Joueur[],
+  reglages: Reglages,
+  { alea = Math.random, gorgees: gorgeesImposees }: OptionsRendu = {},
+): CarteJouee {
+  const { intensite } = reglages
+  const jetons = lireJetons(carte.texte)
+  const reference = jetons.find((j) => VERBES_POUR_SOI.includes(j.verbe)) ?? jetons[0]
+  const base = reference?.nb ?? GORGEES_PAR_DEFAUT
+  const repete = carte.tags.includes(TAG_REPETE)
+
+  function tirer(): number {
+    if (repete) return decalerGorgees(base, 0, intensite)
+    if (carte.difficulte !== undefined) {
+      return gorgeesSelonDifficulte(carte.difficulte, intensite, alea)
+    }
+    return gorgeesSansDifficulte(base, intensite, alea)
   }
+  const nb = Math.min(gorgeesImposees ?? tirer(), plafondGorgees(intensite))
+  const ecart = nb - base
+
+  const { segments, gorgees } = rendreTexte(carte.texte, joueursChoisis, reglages, (jeton) =>
+    borneGroupe(jeton.verbe, decalerGorgees(jeton.nb, ecart, intensite), intensite),
+  )
+  const premier = joueursChoisis[0]
+  const penalite: Penalite = {
+    gorgees: nb,
+    // Une pénalité qui se répète reste petite, quelle que soit la difficulté de la carte.
+    taille: repete ? 'petit' : tailleGage(carte.difficulte, nb),
+    distribue: reference?.verbe === 'distribue',
+    speciale: carte.difficulte === DIFFICULTE_EXTREME && jetons.length === 0,
+    repete,
+    enGage: reglages.sansAlcool || (premier !== undefined && !premier.boitAlcool),
+  }
+  return { carte, joueurs: joueursChoisis, segments, gorgees, penalite }
+}
+
+/**
+ * Rend une phrase qui accompagne une carte (consigne du jeu, verdict d'une manche) :
+ * tous ses jetons prennent la pénalité de la carte, plafonnée pour les pénalités de groupe.
+ */
+export function rendreConsigne(
+  texte: string,
+  joueursChoisis: Joueur[],
+  reglages: Reglages,
+  gorgeesCarte: number,
+): { segments: Segment[]; gorgees: number } {
+  const nb = decalerGorgees(gorgeesCarte, 0, reglages.intensite)
+  return rendreTexte(texte, joueursChoisis, reglages, (jeton) =>
+    borneGroupe(jeton.verbe, nb, reglages.intensite),
+  )
 }
 
 /** Met une majuscule à une action de boisson placée en début de phrase (« Raté ? Bois… »). */
@@ -212,7 +304,48 @@ function carteFinDeRegle(regle: CarteJouee, reglages: Reglages): CarteJouee | nu
     texte: regle.carte.texteFin,
     texteFin: undefined,
   }
-  return { ...rendreCarte(fin, regle.joueurs, reglages), gorgees: 0 }
+  const gorgees = regle.penalite?.gorgees
+  return { ...rendreCarte(fin, regle.joueurs, reglages, { gorgees }), gorgees: 0, penalite: null }
+}
+
+/**
+ * Réordonne un paquet pour doser l'enjeu : on commence doucement, pas de carte
+ * « les plus dures » dans les premières cartes, et jamais deux cartes difficiles d'affilée quand c'est évitable.
+ */
+export function etalerDifficultes(cartes: readonly Carte[]): Carte[] {
+  const restantes = [...cartes]
+  const ordre: Carte[] = []
+  while (restantes.length > 0) {
+    const precedente = ordre[ordre.length - 1]
+    const apresForte = (precedente?.difficulte ?? 0) >= DIFFICULTE_FORTE
+    const position = restantes.findIndex((carte) => {
+      const difficulte = carte.difficulte ?? 0
+      if (ordre.length < DEBUT_SANS_EXTREME && difficulte > DIFFICULTE_FORTE) return false
+      if (ordre.length < DEBUT_SANS_DIFFICILE && difficulte >= DIFFICULTE_FORTE) return false
+      return !(apresForte && difficulte >= DIFFICULTE_FORTE)
+    })
+    ordre.push(...restantes.splice(Math.max(0, position), 1))
+  }
+  return ordre
+}
+
+/**
+ * Cartes qui peuvent sortir à ce moment d'une partie tirée carte par carte (La Roue) :
+ * mêmes règles de dosage que `etalerDifficultes`. Si rien ne passe, on garde tout.
+ */
+export function cartesDuMoment(
+  cartes: readonly Carte[],
+  nbDejaJouees: number,
+  precedente: Carte | undefined,
+): Carte[] {
+  const apresForte = (precedente?.difficulte ?? 0) >= DIFFICULTE_FORTE
+  const permises = cartes.filter((carte) => {
+    const difficulte = carte.difficulte ?? 0
+    if (nbDejaJouees < DEBUT_SANS_EXTREME && difficulte > DIFFICULTE_FORTE) return false
+    if (nbDejaJouees < DEBUT_SANS_DIFFICILE && difficulte >= DIFFICULTE_FORTE) return false
+    return !(apresForte && difficulte >= DIFFICULTE_FORTE)
+  })
+  return permises.length > 0 ? permises : [...cartes]
 }
 
 export interface OptionsPaquet {
@@ -232,7 +365,7 @@ export function construirePaquet(
   const autorisees = melanger(filtrerCartes(cartes, joueurs, reglages), alea)
   const nouvelles = autorisees.filter((c) => !dejaVues.has(c.id))
   const revues = autorisees.filter((c) => dejaVues.has(c.id))
-  const selection = [...nouvelles, ...revues].slice(0, taille)
+  const selection = etalerDifficultes([...nouvelles, ...revues].slice(0, taille))
 
   // Attribution des joueurs, en équilibrant le nombre de cartes de chacun.
   const { jouees } = selection.reduce<{
@@ -246,7 +379,7 @@ export function construirePaquet(
         etat.compteurs,
       )
       return {
-        jouees: [...etat.jouees, rendreCarte(carte, choisis, reglages)],
+        jouees: [...etat.jouees, rendreCarte(carte, choisis, reglages, { alea })],
         compteurs,
       }
     },

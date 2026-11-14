@@ -1,7 +1,7 @@
 // Point d'entrée du contenu : charge les fichiers JSON et vérifie leur forme.
 // Pour ajouter des cartes, modifie simplement les fichiers .json de ce dossier.
 
-import type { Carte, IdJeu, IdJeuCartes, PaireMots, Ton } from '../types'
+import type { Carte, IdJeu, IdJeuCartes, PaireMots, TailleGage, Ton } from '../types'
 import defisVerites from './defis-verites.json'
 import duel from './duel.json'
 import jeNaiJamais from './je-nai-jamais.json'
@@ -15,6 +15,8 @@ import imposteurBrut from './imposteur.json'
 
 const TONS: readonly string[] = ['tout-public', 'pimente', 'hard']
 const INTENSITES: readonly string[] = ['soft', 'normal', 'hard']
+const DIFFICULTES_CARTE: readonly unknown[] = [1, 2, 3, 4]
+const TAILLES_GAGE: readonly unknown[] = ['petit', 'moyen', 'gros']
 
 /** Renvoie la liste des problèmes d'une carte (vide si tout va bien). */
 export function problemesCarte(brut: unknown): string[] {
@@ -34,6 +36,9 @@ export function problemesCarte(brut: unknown): string[] {
   }
   if (typeof carte.minJoueurs !== 'number' || carte.minJoueurs < 1) {
     problemes.push('minJoueurs doit être un nombre')
+  }
+  if (carte.difficulte !== undefined && !DIFFICULTES_CARTE.includes(carte.difficulte)) {
+    problemes.push('difficulte doit valoir 1, 2, 3 ou 4')
   }
   return problemes
 }
@@ -73,12 +78,17 @@ export interface Gage {
   ton: Ton
   /** Gage qui demande de bouger. */
   physique?: boolean
+  /** Petit, moyen ou gros gage : doit correspondre à la difficulté de la carte ratée. */
+  taille?: TailleGage
   /** Gage gênant ou intime : écarté si un joueur refuse les questions gênantes. */
   genant?: boolean
 }
 
 export const GAGES: Gage[] = (gagesBruts as Gage[]).filter(
-  (gage) => typeof gage.texte === 'string' && TONS.includes(gage.ton),
+  (gage) =>
+    typeof gage.texte === 'string' &&
+    TONS.includes(gage.ton) &&
+    (gage.taille === undefined || TAILLES_GAGE.includes(gage.taille)),
 )
 
 const DIFFICULTES: readonly unknown[] = [1, 2, 3]
