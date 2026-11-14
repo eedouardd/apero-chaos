@@ -2,6 +2,7 @@ import type { DefinitionJeu } from '../jeux/catalogue'
 import { JeuBombe } from '../jeux/JeuBombe'
 import { JeuCartes } from '../jeux/JeuCartes'
 import { JeuDuel } from '../jeux/JeuDuel'
+import { JeuImposteur } from '../jeux/JeuImposteur'
 import { JeuRoue } from '../jeux/JeuRoue'
 import type { Joueur, Reglages, StatsPartie } from '../types'
 
@@ -24,6 +25,8 @@ export function Partie(props: PropsPartie) {
       return <JeuDuel {...props} />
     case 'la-bombe':
       return <JeuBombe {...props} />
+    case 'imposteur':
+      return <JeuImposteur {...props} />
     default:
       // Tous les autres jeux se jouent carte après carte.
       return <JeuCartes {...props} />

@@ -55,6 +55,19 @@ export interface Carte {
   texteFin?: string
 }
 
+/** Une paire de mots de L'Imposteur, telle qu'écrite dans `src/contenu/imposteur.json`. */
+export interface PaireMots {
+  id: string
+  /** Deux mots proches : l'un pour les innocents, l'autre pour les imposteurs (tirés au sort). */
+  mots: [string, string]
+  ton: Ton
+  /** 1 = mots bien distincts, 2 = proches, 3 = quasi-synonymes. */
+  difficulte: 1 | 2 | 3
+  tags: Tag[]
+  /** Jamais affiché : évite deux paires du même thème dans une partie. */
+  theme: string
+}
+
 /** Morceau de texte prêt à afficher. */
 export type Segment =
   | { type: 'texte'; valeur: string }
@@ -79,12 +92,30 @@ export type IdJeu =
   | 'tu-preferes'
   | 'la-bombe'
   | 'vrai-ou-bluff'
+  | 'imposteur'
+
+/** Jeux dont le contenu n'est pas une liste de cartes classiques. */
+export type IdJeuSpecial = 'imposteur'
+
+/** Jeux qui tirent leurs cartes dans `CARTES` (voir `src/contenu`). */
+export type IdJeuCartes = Exclude<IdJeu, IdJeuSpecial>
+
+/** Petite récompense affichée sur l'écran de fin. */
+export interface Trophee {
+  emoji: string
+  titre: string
+  prenom: string
+  detail: string
+}
 
 /** Statistiques d'une partie, pour l'écran de fin. */
 export interface StatsPartie {
+  /** Nombre de cartes (ou de manches, selon le jeu) jouées. */
   cartesJouees: number
   /** Par identifiant de joueur. */
   parJoueur: Record<string, { cartes: number; gorgees: number }>
+  /** Trophées propres au jeu. Absents : on prend ceux des jeux de cartes. */
+  trophees?: Trophee[]
 }
 
 export const REGLAGES_PAR_DEFAUT: Reglages = {

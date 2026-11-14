@@ -14,7 +14,7 @@ import type {
 /** Générateur de hasard (entre 0 et 1). Remplaçable dans les tests. */
 export type Alea = () => number
 
-const NIVEAU_TON: Record<Ton, number> = { 'tout-public': 0, pimente: 1, hard: 2 }
+export const NIVEAU_TON: Record<Ton, number> = { 'tout-public': 0, pimente: 1, hard: 2 }
 const NIVEAU_INTENSITE: Record<Intensite, number> = { soft: 0, normal: 1, hard: 2 }
 
 const GORGEES_MAX = 5

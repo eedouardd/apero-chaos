@@ -25,6 +25,8 @@ export interface DefinitionJeu {
   consigne?: string
   /** Affiche un bouton « 3-2-1 » pour voter tous en même temps. */
   decompte?: boolean
+  /** Ce qu'on compte dans le récap : « cartes » par défaut, « manches » pour certains jeux. */
+  unite?: { singulier: string; pluriel: string }
   /** `false` tant que le jeu n'est pas encore jouable. */
   pret: boolean
 }
@@ -196,6 +198,27 @@ export const CATALOGUE: DefinitionJeu[] = [
     consigne:
       'Histoire vraie ou inventée, au choix. Les autres votent : ceux qui se trompent prennent {gorgees:1}. Tout le monde a trouvé ? {j1} prend {gorgees:2}.',
     decompte: true,
+    pret: true,
+  },
+  {
+    id: 'imposteur',
+    nom: 'L’Imposteur',
+    emoji: '🕵️',
+    accroche: 'Un mot secret chacun. L’un de vous n’a pas le même… et il l’ignore.',
+    couleur: '#c8ff3d',
+    minJoueurs: 4,
+    maxJoueurs: 12,
+    idealMin: 5,
+    idealMax: 9,
+    plutotPhysique: false,
+    plutotIntime: false,
+    regles: [
+      'Chacun regarde son mot secret en cachette. Tous ont le même, sauf l’imposteur, qui a un mot proche sans le savoir.',
+      'À tour de rôle, dites un seul mot en lien avec le vôtre. Interdit de dire son mot ou un mot déjà cité.',
+      'Débattez, puis touchez ensemble le prénom du suspect. À partir de 8 joueurs, il y a deux imposteurs.',
+      'Imposteur démasqué : il boit (ou fait un gage). Raté : ce sont les innocents qui boivent.',
+    ],
+    unite: { singulier: 'manche', pluriel: 'manches' },
     pret: true,
   },
 ]

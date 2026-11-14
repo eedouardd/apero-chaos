@@ -7,6 +7,15 @@ import { Bouton } from './Bouton'
 import { Cadre } from './Cadre'
 import { Fenetre } from './Fenetre'
 
+/** Question posée avant une action qui fait perdre quelque chose. */
+export interface Confirmation {
+  titre: string
+  detail: string
+  /** Texte du bouton qui confirme (ex. « Oui, terminer »). */
+  oui: string
+  action: () => void
+}
+
 interface Props {
   jeu: DefinitionJeu
   joueurs: Joueur[]
@@ -17,6 +26,12 @@ interface Props {
   children: ReactNode
   /** Bouton supplémentaire affiché à côté de « Gage » (ex. décompte 3-2-1). */
   actionPied?: ReactNode
+  /** Boutons propres au jeu dans la fenêtre de pause ; `demander` ouvre une confirmation. */
+  actionsPause?: (demander: (confirmation: Confirmation) => void) => ReactNode
+  /** Prévenu quand la pause s'ouvre ou se ferme (pour geler un minuteur). */
+  onPause?: (enPause: boolean) => void
+  /** Masque le bouton « Gage » (ex. pendant qu'on se passe le téléphone en secret). */
+  sansGage?: boolean
   /** « Terminer la partie » depuis la pause : va au récap. */
   onTerminer: () => void
   /** Quitter sans récap. */
@@ -35,6 +50,9 @@ export function CadrePartie({
   total,
   children,
   actionPied,
+  actionsPause,
+  sansGage = false,
+  onPause,
   onTerminer,
   onQuitter,
 }: Props) {
@@ -44,26 +62,41 @@ export function CadrePartie({
     () => gagesAutorises(GAGES, joueurs, reglages),
     [joueurs, reglages],
   )
-  const fermerPause = useCallback(() => setEnPause(false), [])
+  const [aConfirmer, setAConfirmer] = useState<Confirmation | null>(null)
+  const ouvrirPause = () => {
+    setEnPause(true)
+    onPause?.(true)
+  }
+  const fermerPause = useCallback(() => {
+    setEnPause(false)
+    setAConfirmer(null)
+    onPause?.(false)
+  }, [onPause])
   const fermerGage = useCallback(() => setGage(null), [])
 
   return (
     <Cadre
       titre={jeu.nom}
       couleur={jeu.couleur}
-      onRetour={() => setEnPause(true)}
+      onRetour={ouvrirPause}
       iconeRetour="⏸"
       libelleRetour="Mettre en pause"
       pied={
-        <div className={actionPied ? 'grid grid-cols-2 gap-2' : undefined}>
-          {actionPied}
-          <Bouton
-            variante="contour"
-            onClick={() => setGage(tirerGage(gages, gage))}
+        sansGage && !actionPied ? undefined : (
+          <div
+            className={actionPied && !sansGage ? 'grid grid-cols-2 gap-2' : undefined}
           >
-            🎭 Gage
-          </Bouton>
-        </div>
+            {actionPied}
+            {sansGage ? null : (
+              <Bouton
+                variante="contour"
+                onClick={() => setGage(tirerGage(gages, gage))}
+              >
+                🎭 Gage
+              </Bouton>
+            )}
+          </div>
+        )
       }
     >
       <div
@@ -87,15 +120,57 @@ export function CadrePartie({
 
       {children}
 
-      {enPause ? (
+      {enPause && aConfirmer === null ? (
         <Fenetre titre="Pause" onFermer={fermerPause}>
-          <div className="grid gap-2">
-            <Bouton onClick={fermerPause}>Reprendre</Bouton>
-            <Bouton variante="contour" onClick={onTerminer}>
+          <Bouton onClick={fermerPause}>Reprendre</Bouton>
+          {/* Les actions qui font perdre quelque chose sont à l'écart et se confirment. */}
+          <div className="mt-4 grid gap-2 border-t border-trait pt-4">
+            {actionsPause?.(setAConfirmer)}
+            <Bouton
+              variante="contour"
+              onClick={() =>
+                setAConfirmer({
+                  titre: 'Terminer la partie ?',
+                  detail: 'Vous passez au récap.',
+                  oui: 'Oui, terminer',
+                  action: onTerminer,
+                })
+              }
+            >
               Terminer la partie
             </Bouton>
-            <Bouton variante="discret" onClick={onQuitter}>
+            <Bouton
+              variante="discret"
+              onClick={() =>
+                setAConfirmer({
+                  titre: 'Quitter sans récap ?',
+                  detail: 'La partie en cours sera perdue.',
+                  oui: 'Oui, quitter',
+                  action: onQuitter,
+                })
+              }
+            >
               Quitter sans récap
+            </Bouton>
+          </div>
+        </Fenetre>
+      ) : null}
+
+      {enPause && aConfirmer !== null ? (
+        <Fenetre titre={aConfirmer.titre} onFermer={fermerPause}>
+          <p className="pb-5 text-center text-lg text-texte-doux">
+            {aConfirmer.detail}
+          </p>
+          <div className="grid gap-2">
+            <Bouton onClick={fermerPause}>Non, reprendre</Bouton>
+            <Bouton
+              variante="contour"
+              onClick={() => {
+                fermerPause()
+                aConfirmer.action()
+              }}
+            >
+              {aConfirmer.oui}
             </Bouton>
           </div>
         </Fenetre>

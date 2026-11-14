@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Bouton } from '../composants/Bouton'
 import { CadrePartie, PartieVide } from '../composants/CadrePartie'
 import { TexteCarte } from '../composants/TexteCarte'
-import { CARTES } from '../contenu'
+import { cartesDuJeu } from '../contenu'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
 import { construirePaquet } from '../moteur/cartes'
@@ -21,7 +21,7 @@ type Phase = 'pret' | 'meche' | 'explosion' | 'verdict'
 /** La Bombe : une catégorie, un minuteur caché, et ça explose dans les mains de quelqu'un. */
 export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPartie) {
   const [paquet] = useState(() =>
-    construirePaquet(CARTES[jeu.id], joueurs, reglages, {
+    construirePaquet(cartesDuJeu(jeu.id), joueurs, reglages, {
       taille: NB_MANCHES,
       dejaVues: cartesVues(jeu.id),
     }),

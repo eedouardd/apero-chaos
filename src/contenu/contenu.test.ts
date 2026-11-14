@@ -6,13 +6,17 @@ import { CATALOGUE } from '../jeux/catalogue'
 import { filtrerCartes } from '../moteur/cartes'
 import type { Joueur } from '../types'
 import gages from './gages.json'
-import { CARTES, problemesCarte } from './index'
+import imposteur from './imposteur.json'
+import { CARTES, PAIRES_IMPOSTEUR, cartesDuJeu, problemesCarte, problemesPaire } from './index'
+import { paireAutorisee } from '../moteur/imposteur'
 
 const TOUTES_LES_CARTES = Object.values(CARTES).flat()
 
 const FICHIERS: Record<string, { texte: string; id: string }[]> = {
   ...CARTES,
   'gages.json': gages,
+  // Les deux mots d'une paire passent les mêmes garde-fous que le texte d'une carte.
+  'imposteur.json': imposteur.map((paire) => ({ id: paire.id, texte: paire.mots.join(' / ') })),
 }
 
 /** Formulations interdites, même en Hard. */
@@ -61,12 +65,13 @@ describe('contenu des cartes', () => {
 })
 
 describe('jeux prêts', () => {
-  const prets = CATALOGUE.filter((jeu) => jeu.pret)
+  // Les jeux à format propre (L'Imposteur…) ont leurs tests à part.
+  const prets = CATALOGUE.filter((jeu) => jeu.pret && jeu.id in CARTES)
 
   test.each(prets.map((jeu) => [jeu.nom, jeu] as const))(
     '%s : au moins 80 cartes',
     (_nom, jeu) => {
-      expect(CARTES[jeu.id].length).toBeGreaterThanOrEqual(NB_CARTES_MIN)
+      expect(cartesDuJeu(jeu.id).length).toBeGreaterThanOrEqual(NB_CARTES_MIN)
     },
   )
 
@@ -80,7 +85,7 @@ describe('jeux prêts', () => {
         questionsIntimes: false,
         boitAlcool: false,
       }))
-      const cartes = filtrerCartes(CARTES[jeu.id], prudents, {
+      const cartes = filtrerCartes(cartesDuJeu(jeu.id), prudents, {
         ton: 'tout-public',
         intensite: 'soft',
         sansAlcool: true,
@@ -89,4 +94,45 @@ describe('jeux prêts', () => {
       expect(cartes.length).toBeGreaterThanOrEqual(12)
     },
   )
+})
+
+describe('paires de L’Imposteur', () => {
+  test('au moins 150 paires, toutes bien formées', () => {
+    expect(imposteur.length).toBeGreaterThanOrEqual(150)
+    expect(PAIRES_IMPOSTEUR.length).toBe(imposteur.length)
+    for (const paire of imposteur) {
+      expect(problemesPaire(paire), `paire ${paire.id}`).toEqual([])
+    }
+  })
+
+  test('un même mot ne sert pas dans plus de deux paires', () => {
+    const usages = new Map<string, number>()
+    for (const mot of PAIRES_IMPOSTEUR.flatMap((paire) => paire.mots)) {
+      usages.set(mot, (usages.get(mot) ?? 0) + 1)
+    }
+    const tropVus = [...usages].filter(([, nb]) => nb > 2).map(([mot]) => mot)
+    expect(tropVus).toEqual([])
+  })
+
+  test('assez de paires de chaque difficulté pour un groupe prudent en Tout public', () => {
+    const prudents: Joueur[] = Array.from({ length: 4 }, (_, i) => ({
+      id: `p${i}`,
+      prenom: `P${i}`,
+      defisPhysiques: false,
+      questionsIntimes: false,
+      boitAlcool: false,
+    }))
+    const autorisees = PAIRES_IMPOSTEUR.filter((paire) =>
+      paireAutorisee(paire, prudents, {
+        ton: 'tout-public',
+        intensite: 'soft',
+        sansAlcool: true,
+        gorgeesSeulement: true,
+      }),
+    )
+    for (const difficulte of [1, 2, 3]) {
+      const nb = autorisees.filter((paire) => paire.difficulte === difficulte).length
+      expect(nb, `difficulté ${difficulte}`).toBeGreaterThanOrEqual(15)
+    }
+  })
 })

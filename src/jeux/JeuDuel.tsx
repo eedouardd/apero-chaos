@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Bouton } from '../composants/Bouton'
 import { CadrePartie, PartieVide } from '../composants/CadrePartie'
 import { TexteCarte } from '../composants/TexteCarte'
-import { CARTES } from '../contenu'
+import { cartesDuJeu } from '../contenu'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
 import { construirePaquet } from '../moteur/cartes'
@@ -16,7 +16,7 @@ const NB_DUELS = 12
 /** Duel : deux joueurs s'affrontent, on touche le prénom du gagnant, le perdant trinque. */
 export function JeuDuel({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPartie) {
   const [paquet] = useState(() =>
-    construirePaquet(CARTES[jeu.id], joueurs, reglages, {
+    construirePaquet(cartesDuJeu(jeu.id), joueurs, reglages, {
       taille: NB_DUELS,
       dejaVues: cartesVues(jeu.id),
     }),

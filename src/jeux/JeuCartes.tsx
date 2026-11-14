@@ -3,7 +3,7 @@ import { Bouton } from '../composants/Bouton'
 import { CadrePartie, PartieVide } from '../composants/CadrePartie'
 import { CarteVue } from '../composants/CarteVue'
 import { Decompte } from '../composants/Decompte'
-import { CARTES } from '../contenu'
+import { cartesDuJeu } from '../contenu'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
 import { construirePaquet, rendreCarte } from '../moteur/cartes'
@@ -20,7 +20,7 @@ const TAILLE_PAQUET = 25
 export function JeuCartes({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPartie) {
   // Le paquet est fabriqué une seule fois, au début de la partie.
   const [paquet] = useState(() =>
-    construirePaquet(CARTES[jeu.id], joueurs, reglages, {
+    construirePaquet(cartesDuJeu(jeu.id), joueurs, reglages, {
       taille: TAILLE_PAQUET,
       dejaVues: cartesVues(jeu.id),
     }),

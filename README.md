@@ -4,7 +4,7 @@ Jeux de soirée sur un seul téléphone qui passe de main en main. Web app insta
 
 **Jouer : https://eedouardd.github.io/apero-chaos/**
 
-Huit jeux : Défis & Vérités, Je n'ai jamais, Qui pourrait…, La Roue, Duel, Tu préfères…, La Bombe, Vrai ou Bluff. Trois tons (Tout public, Étudiant pimenté, Hard), trois intensités, et un mode Sans alcool où les gorgées deviennent des gages.
+Neuf jeux : Défis & Vérités, Je n'ai jamais, Qui pourrait…, La Roue, Duel, Tu préfères…, La Bombe, Vrai ou Bluff, L'Imposteur. Trois tons (Tout public, Étudiant pimenté, Hard), trois intensités, et un mode Sans alcool où les gorgées deviennent des gages.
 
 ## Installer l'app sur son téléphone
 
@@ -44,6 +44,24 @@ Les cartes sont dans `src/contenu`, un fichier par jeu (`defis-verites.json`, `j
 Le nombre s'adapte tout seul à l'intensité, et tout devient un gage en mode Sans alcool ou pour un joueur qui ne boit pas.
 
 **Règles de sécurité, même en Hard** : rien sur la conduite, pas de mélange d'alcools, pas de « cul sec » ni de shots, aucun défi dangereux, rien d'humiliant ou de discriminant. `npm test` refuse les formulations interdites les plus courantes.
+
+### Paires de mots de L'Imposteur
+
+`src/contenu/imposteur.json` a son propre format, une paire par ligne :
+
+```json
+{ "id": "im-001", "mots": ["chat", "poisson rouge"], "ton": "tout-public", "difficulte": 1, "tags": [], "theme": "animaux" }
+```
+
+| Champ | Valeurs | Rôle |
+|-------|---------|------|
+| `mots` | 2 mots distincts, 16 caractères au plus | l'un va aux innocents, l'autre aux imposteurs (tirage au sort) |
+| `ton` | `tout-public`, `pimente`, `hard` | comme pour les cartes |
+| `difficulte` | `1`, `2`, `3` | 1 = mots bien distincts, 3 = presque synonymes ; la partie monte en difficulté |
+| `tags` | liste de mots | `intime` ou `genant` retire la paire si la majorité du groupe refuse ce contenu |
+| `theme` | libre | jamais affiché ; évite deux paires du même thème dans une partie |
+
+Un même mot ne doit pas servir dans plus de deux paires (`npm test` le vérifie).
 
 ## Travailler sur le code
 

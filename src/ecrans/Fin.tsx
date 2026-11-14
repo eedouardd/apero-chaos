@@ -25,7 +25,8 @@ export function Fin({
   onChangerJeu,
   onAccueil,
 }: Props) {
-  const trophees = calculerTrophees(joueurs, stats, sansAlcool)
+  const trophees = stats.trophees ?? calculerTrophees(joueurs, stats, sansAlcool)
+  const unite = jeu.unite ?? { singulier: 'carte', pluriel: 'cartes' }
 
   useEffect(() => {
     jouerSon('victoire')
@@ -57,8 +58,11 @@ export function Fin({
             Bien joué !
           </h2>
           <p className="pt-1 text-texte-doux">
-            {stats.cartesJouees} carte{stats.cartesJouees > 1 ? 's' : ''} de{' '}
-            {jeu.nom} et tout le monde est encore debout.
+            {stats.cartesJouees === 0
+              ? `Partie de ${jeu.nom} arrêtée avant la fin de la première ${unite.singulier}.`
+              : `${stats.cartesJouees} ${
+                  stats.cartesJouees > 1 ? unite.pluriel : unite.singulier
+                } de ${jeu.nom} et tout le monde est encore debout.`}
           </p>
         </div>
 

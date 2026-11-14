@@ -32,7 +32,7 @@ export function Fenetre({ titre, children, onFermer }: Props) {
         aria-label={titre}
         tabIndex={-1}
         onClick={(evenement) => evenement.stopPropagation()}
-        className="anim-apparition lueur w-full max-w-md rounded-3xl bg-surface p-6 focus:outline-none"
+        className="anim-apparition lueur max-h-[calc(100dvh-2.5rem)] w-full max-w-md overflow-y-auto rounded-3xl bg-surface p-6 focus:outline-none"
       >
         <h2 className="font-titre pb-4 text-center text-xl font-bold text-accent uppercase">
           {titre}

@@ -1,7 +1,15 @@
 // Sons courts fabriqués à la volée (Web Audio) et vibrations.
 // Aucun fichier audio à charger : ça marche hors ligne et ça ne pèse rien.
 
-export type NomSon = 'tap' | 'carte' | 'tic' | 'victoire' | 'explosion' | 'vote'
+export type NomSon =
+  | 'tap'
+  | 'carte'
+  | 'tic'
+  | 'victoire'
+  | 'explosion'
+  | 'vote'
+  | 'demasque'
+  | 'rate'
 
 interface Note {
   frequence: number
@@ -27,6 +35,14 @@ const PARTITIONS: Record<NomSon, Note[]> = {
     { frequence: 659, duree: 0.1, debut: 0.1, forme: 'triangle', volume: 0.2 },
     { frequence: 784, duree: 0.1, debut: 0.2, forme: 'triangle', volume: 0.2 },
     { frequence: 1047, duree: 0.25, debut: 0.3, forme: 'triangle', volume: 0.22 },
+  ],
+  demasque: [
+    { frequence: 262, duree: 0.22, debut: 0, forme: 'sawtooth', volume: 0.14 },
+    { frequence: 392, duree: 0.22, debut: 0, forme: 'sawtooth', volume: 0.14 },
+  ],
+  rate: [
+    { frequence: 311, duree: 0.14, debut: 0, forme: 'triangle', volume: 0.2 },
+    { frequence: 220, duree: 0.34, debut: 0.14, forme: 'triangle', volume: 0.2 },
   ],
   explosion: [
     { frequence: 160, duree: 0.5, debut: 0, forme: 'sawtooth', volume: 0.3 },

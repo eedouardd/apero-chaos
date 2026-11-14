@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Bouton } from '../composants/Bouton'
 import { CadrePartie, PartieVide } from '../composants/CadrePartie'
 import { TexteCarte } from '../composants/TexteCarte'
-import { CARTES } from '../contenu'
+import { cartesDuJeu } from '../contenu'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
 import { filtrerCartes, rendreCarte } from '../moteur/cartes'
@@ -28,7 +28,7 @@ function point(angleDeg: number, rayon: number): string {
 /** La Roue : elle désigne un joueur, puis une action tombe pour lui. */
 export function JeuRoue({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPartie) {
   const cartes = useMemo(
-    () => filtrerCartes(CARTES[jeu.id], joueurs, reglages),
+    () => filtrerCartes(cartesDuJeu(jeu.id), joueurs, reglages),
     [jeu.id, joueurs, reglages],
   )
   const [phase, setPhase] = useState<Phase>('attente')

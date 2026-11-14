@@ -1,13 +1,8 @@
 // Récap de fin de partie : transforme les statistiques en petites récompenses.
 
-import type { CarteJouee, Joueur, StatsPartie } from '../types'
+import type { CarteJouee, Joueur, StatsPartie, Trophee } from '../types'
 
-export interface Trophee {
-  emoji: string
-  titre: string
-  prenom: string
-  detail: string
-}
+export type { Trophee }
 
 type Mesure = (stats: { cartes: number; gorgees: number }) => number
 
