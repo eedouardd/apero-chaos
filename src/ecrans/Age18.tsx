@@ -2,12 +2,14 @@ import { Bouton } from '../composants/Bouton'
 import { Cadre } from '../composants/Cadre'
 
 interface Props {
+  /** Partie sans alcool : l'avertissement ne porte que sur le contenu. */
+  sansAlcool: boolean
   onConfirmer: () => void
   onRetour: () => void
 }
 
 /** Avertissement +18, affiché dès que la partie contient de l'alcool ou du contenu adulte. */
-export function Age18({ onConfirmer, onRetour }: Props) {
+export function Age18({ sansAlcool, onConfirmer, onRetour }: Props) {
   return (
     <Cadre
       titre="Avant de jouer"
@@ -25,14 +27,24 @@ export function Age18({ onConfirmer, onRetour }: Props) {
         <p className="font-titre texte-neon text-7xl font-black">18+</p>
         <h2 className="font-titre text-2xl font-bold">Réservé aux adultes</h2>
         <ul className="grid gap-3 text-left text-lg text-texte-doux">
-          <li>🍻 On boit par gorgées, jamais cul sec, et chacun à son rythme.</li>
+          {sansAlcool ? (
+            <li>🌶️ Les cartes de ce ton parlent de séduction et de vie intime.</li>
+          ) : (
+            <li>🍻 On boit par gorgées, jamais cul sec, et chacun à son rythme.</li>
+          )}
           <li>🙅 On peut toujours refuser un défi ou une question.</li>
-          <li>🚗 Celui qui conduit ne boit pas.</li>
-          <li>💧 Un verre d’eau de temps en temps, c’est pas de la triche.</li>
+          {sansAlcool ? null : (
+            <>
+              <li>🚗 Celui qui conduit ne boit pas.</li>
+              <li>💧 Un verre d’eau de temps en temps, c’est pas de la triche.</li>
+            </>
+          )}
         </ul>
-        <p className="text-sm text-texte-doux/70">
-          L’abus d’alcool est dangereux pour la santé.
-        </p>
+        {sansAlcool ? null : (
+          <p className="text-sm text-texte-doux/70">
+            L’abus d’alcool est dangereux pour la santé.
+          </p>
+        )}
       </div>
     </Cadre>
   )

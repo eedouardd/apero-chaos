@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bouton } from '../composants/Bouton'
 import { CadrePartie, PartieVide } from '../composants/CadrePartie'
+import { ChoixJoueur } from '../composants/ChoixJoueur'
 import { TexteCarte } from '../composants/TexteCarte'
 import { cartesDuJeu } from '../contenu'
+import { useGardeToucher } from '../effets/garde'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
 import { construirePaquet } from '../moteur/cartes'
@@ -31,16 +33,23 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
   const [verdicts, setVerdicts] = useState<CarteJouee[]>([])
   const [verdict, setVerdict] = useState<CarteJouee | null>(null)
 
-  // Mèche allumée : tic-tac de plus en plus rapide, puis explosion.
+  const [enPause, setEnPause] = useState(false)
+  // Durée totale de la mèche et temps qu'il lui reste (gelé pendant la pause).
+  const meche = useRef({ duree: 0, restant: 0 })
+  // Le bouton de suite prend la place des prénoms : il ignore un double tap.
+  const suiteTropTot = useGardeToucher(phase)
+
+  // Mèche allumée : tic-tac de plus en plus rapide, puis explosion. La pause gèle tout.
   useEffect(() => {
-    if (phase !== 'meche') return
-    const duree = dureeMeche()
+    if (phase !== 'meche' || enPause) return
+    const { duree, restant } = meche.current
     const debut = Date.now()
     let prochainTic: ReturnType<typeof setTimeout>
 
     function tic() {
       jouerSon('tic')
-      const avancement = Math.min(1, (Date.now() - debut) / duree)
+      const ecoule = duree - restant + (Date.now() - debut)
+      const avancement = Math.min(1, ecoule / duree)
       const intervalle = TIC_LENT_MS - (TIC_LENT_MS - TIC_RAPIDE_MS) * avancement
       prochainTic = setTimeout(tic, intervalle)
     }
@@ -50,13 +59,14 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
       jouerSon('explosion')
       vibrer([200, 80, 200, 80, 400])
       setPhase('explosion')
-    }, duree)
+    }, restant)
 
     return () => {
       clearTimeout(prochainTic)
       clearTimeout(explosion)
+      meche.current = { duree, restant: Math.max(0, restant - (Date.now() - debut)) }
     }
-  }, [phase])
+  }, [phase, enPause])
 
   const manche = paquet[index]
   if (manche === undefined) return <PartieVide jeu={jeu} onQuitter={onQuitter} />
@@ -70,12 +80,13 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
   }
 
   function designerVictime(victime: Joueur) {
+    if (suiteTropTot()) return
     setVerdict(sanctionPerdant(manche.carte, victime, [], reglages))
     setPhase('verdict')
   }
 
   function mancheSuivante() {
-    if (verdict === null) return
+    if (verdict === null || suiteTropTot()) return
     const tous = [...verdicts, verdict]
     if (index + 1 >= paquet.length) {
       terminer(tous)
@@ -96,14 +107,15 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
       total={paquet.length}
       onTerminer={() => terminer(verdict ? [...verdicts, verdict] : verdicts)}
       onQuitter={onQuitter}
+      onPause={setEnPause}
+      sansGage={phase === 'meche'}
     >
       <div
-        className={`flex min-h-0 flex-1 flex-col items-center gap-4 rounded-[2rem] p-6 text-center transition-colors duration-300 ${
+        className={`flex min-h-0 flex-1 flex-col items-center gap-4 overflow-y-auto rounded-[2rem] p-6 text-center transition-colors duration-300 ${
           phase === 'explosion' || phase === 'verdict'
             ? 'bg-neon-rouge/25'
             : 'bg-linear-to-b from-surface-2 to-surface'
         } lueur`}
-        aria-live="assertive"
       >
         <p className="text-sm tracking-wider text-texte-doux uppercase">
           Catégorie
@@ -112,7 +124,7 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
           <TexteCarte segments={manche.segments} />
         </p>
 
-        <div className="my-auto grid place-items-center gap-3">
+        <div className="my-auto grid place-items-center gap-3" aria-live="assertive">
           {phase === 'pret' ? (
             <>
               <span className="text-8xl" aria-hidden="true">
@@ -154,7 +166,11 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
           {phase === 'pret' ? (
             <Bouton
               onClick={() => {
+                // Même emplacement que « Bombe suivante » : un double tap n'allume pas la mèche.
+                if (suiteTropTot()) return
                 vibrer(60)
+                const duree = dureeMeche()
+                meche.current = { duree, restant: duree }
                 setPhase('meche')
               }}
             >
@@ -164,24 +180,24 @@ export function JeuBombe({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPart
           {phase === 'explosion' ? (
             <div className="grid gap-2">
               <p className="text-sm text-texte-doux">Qui tenait la bombe ?</p>
-              <div className="grid grid-cols-2 gap-2">
-                {joueurs.map((joueur) => (
-                  <button
-                    key={joueur.id}
-                    type="button"
-                    onClick={() => designerVictime(joueur)}
-                    className="min-h-12 truncate rounded-xl border-2 border-accent bg-nuit/50 px-2 text-base font-semibold active:scale-95"
-                  >
-                    {joueur.prenom}
-                  </button>
-                ))}
-              </div>
+              <ChoixJoueur joueurs={joueurs} onChoisir={designerVictime} />
             </div>
           ) : null}
           {phase === 'verdict' ? (
-            <Bouton onClick={mancheSuivante}>
-              {index + 1 >= paquet.length ? 'Voir le récap' : 'Bombe suivante'}
-            </Bouton>
+            <div className="grid gap-2">
+              <Bouton onClick={mancheSuivante}>
+                {index + 1 >= paquet.length ? 'Voir le récap' : 'Bombe suivante'}
+              </Bouton>
+              <Bouton
+                variante="discret"
+                onClick={() => {
+                  setVerdict(null)
+                  setPhase('explosion')
+                }}
+              >
+                Pas le bon joueur ? Corriger
+              </Bouton>
+            </div>
           ) : null}
         </div>
       </div>

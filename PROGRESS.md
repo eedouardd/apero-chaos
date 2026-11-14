@@ -51,6 +51,32 @@ Les cartes ont été écrites à partir de fichiers compacts convertis en JSON ;
 
 **Non vérifié** : l'installation sur l'écran d'accueil et le mode hors ligne n'ont pas pu être testés dans le navigateur intégré de Claude (il refuse les service workers). Le fichier `sw.js` est bien généré et sa liste de fichiers est complète.
 
+## Étape 7, phase 1 : état des lieux et corrections (14 novembre 2026)
+
+Relecture complète par `qa-testeur`, `auteur-contenu` et `ux-designer`, puis correction de tout ce qui était classé bloquant ou important.
+
+**Moteur et jeux**
+
+- Groupe où personne ne boit : toute la partie passe en mode Sans alcool (`reglagesEffectifs` dans `src/moteur/joueurs.ts`).
+- La Bombe : la pause gèle la mèche, pas de gage pendant la mèche, on peut corriger le joueur désigné.
+- Duel : prénoms en entier, correction du gagnant possible, 30 duels jouables à deux sans arbitre.
+- La Roue : tirage équilibré (`tirerJoueurRoue`), jamais trois fois de suite le même joueur, plus de 16e tour.
+- L'Imposteur : un mot ne ressort jamais deux fois dans une partie, et plus aucun mot dans deux paires.
+- Garde contre les touchers fortuits (`src/effets/garde.ts`) : une carte ou un bouton qui vient d'apparaître ignore les touchers pendant une demi-seconde. Bouton « carte précédente » dans les jeux de cartes.
+- Gages : 60 gages, filtrés aussi pour les joueurs qui refusent les questions gênantes (champ `genant`).
+
+**App**
+
+- Bandeau « Nouvelle version prête » sur l'accueil (`src/effets/miseAJour.ts`, service worker en mode `prompt`).
+- Liste des jeux regroupée : « Pour vous ce soir », trois familles, puis « Fait par vous ».
+- « Mes cartes » : gratuit, sorti des packs. Le groupe écrit ses cartes, gardées sur le téléphone (`src/ecrans/MesCartes.tsx`, `src/moteur/cartesPerso.ts`).
+- Parcours raccourci pour un groupe qui revient : réglages, confirmation +18 (12 h) et règles déjà lues ne sont plus réimposés. Les règles se relisent depuis la pause.
+- Bouton retour du téléphone : revient à l'écran précédent, ouvre la pause en partie (`src/effets/retour.ts`).
+- Mode Sans alcool : règles, accroches et écran +18 ne parlent plus de boire.
+- Écran maintenu allumé pendant toutes les parties.
+
+**Laissé de côté (mineur)** : doublons de joueurs dans la sauvegarde, prénoms en emojis, libellés du récap, barre d'avancement avec les règles temporaires, mémoire des cartes vues perdue au rechargement, vibration liée au son, piège à focus des fenêtres, lint dans la CI, reprise d'une partie après fermeture. L'option « boire = gorgées » coupée affiche encore « un demi-verre » : à trancher en phase 2.
+
 ## Étape 6 : quatre nouveaux jeux (en cours)
 
 Ordre prévu : L'Imposteur, Quiz du bar, Le Roi, Le Bus. Un jeu est fini avant d'ouvrir le suivant.
@@ -81,7 +107,7 @@ Quiz du bar, Le Roi (avec le paquet de 52 cartes partagé), Le Bus.
 
 À faire par Edouard sur un vrai téléphone : ouvrir https://eedouardd.github.io/apero-chaos/, l'ajouter à l'écran d'accueil, couper le réseau et relancer l'app, vérifier les sons et vibrations, jouer une partie de chaque jeu.
 
-Idées pour plus tard : cartes personnalisées, packs premium payants, durée de partie réglable.
+Idées pour plus tard : packs premium payants, durée de partie réglable.
 
 ## Commandes utiles
 

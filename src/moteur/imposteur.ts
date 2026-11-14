@@ -55,10 +55,20 @@ export function paireAutorisee(
   return partants * 2 >= joueurs.length
 }
 
+/** Forme de comparaison d'un mot : sans accent, sans majuscule, sans « s » ou « x » final. */
+export function cleMot(mot: string): string {
+  return mot
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('fr')
+    .trim()
+    .replace(/[sx]$/, '')
+}
+
 export interface OptionsPaire {
   /** Rang de la manche (0 pour la première). */
   rang: number
-  /** Paires déjà sorties dans cette partie : jamais reprises, thèmes évités. */
+  /** Paires déjà sorties dans cette partie : jamais reprises (ni leurs mots), thèmes évités. */
   utilisees: readonly PaireMots[]
   /** Paires vues lors des parties précédentes : elles sortent en dernier. */
   dejaVues?: ReadonlySet<string>
@@ -76,10 +86,14 @@ export function choisirPaire(
   { rang, utilisees, dejaVues = new Set(), alea = Math.random }: OptionsPaire,
 ): PaireMots | null {
   const idsUtilises = new Set(utilisees.map((p) => p.id))
+  const motsSortis = new Set(utilisees.flatMap((p) => p.mots.map(cleMot)))
   const themesSortis = new Set(utilisees.map((p) => p.theme))
   const candidates = melanger(
     paires.filter(
-      (p) => !idsUtilises.has(p.id) && paireAutorisee(p, joueurs, reglages),
+      (p) =>
+        !idsUtilises.has(p.id) &&
+        !p.mots.some((mot) => motsSortis.has(cleMot(mot))) &&
+        paireAutorisee(p, joueurs, reglages),
     ),
     alea,
   )

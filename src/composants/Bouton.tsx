@@ -33,7 +33,7 @@ export function Bouton({
         vibrer()
         onClick?.(evenement)
       }}
-      className={`min-h-14 w-full rounded-2xl px-6 py-3 text-base transition-transform duration-150 ease-[var(--ease-rebond)] active:scale-95 disabled:pointer-events-none disabled:opacity-35 ${STYLES[variante]} ${className}`}
+      className={`min-h-14 w-full rounded-2xl px-6 py-3 text-base transition-transform duration-150 ease-[var(--ease-rebond)] active:scale-95 disabled:pointer-events-none disabled:border-trait disabled:bg-surface-2 disabled:text-texte-doux disabled:shadow-none ${STYLES[variante]} ${className}`}
     >
       {children}
     </button>

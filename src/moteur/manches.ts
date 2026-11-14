@@ -41,6 +41,41 @@ export function tirerAction(
   return choix[Math.floor(alea() * choix.length)]
 }
 
+/** Un joueur déjà passé N fois a `1 / (1 + POIDS_PASSAGE × N)` chances relatives de ressortir. */
+const POIDS_PASSAGE = 2
+/** Personne n'est désigné plus de deux fois d'affilée (s'il y a quelqu'un d'autre). */
+const SUITE_MAX = 2
+
+/**
+ * Désigne le prochain joueur de la roue : ceux qui sont peu passés ont plus de chances,
+ * et le même joueur ne sort jamais trois fois de suite.
+ * `passes` liste les identifiants des joueurs déjà désignés, dans l'ordre.
+ */
+export function tirerJoueurRoue<T extends { id: string }>(
+  candidats: readonly T[],
+  passes: readonly string[],
+  alea: Alea = Math.random,
+): T | null {
+  const derniers = passes.slice(-SUITE_MAX)
+  const enSerie =
+    derniers.length === SUITE_MAX && derniers.every((id) => id === derniers[0])
+      ? derniers[0]
+      : null
+  const autres = candidats.filter((c) => c.id !== enSerie)
+  const choix = autres.length > 0 ? autres : candidats
+  if (choix.length === 0) return null
+  const poids = choix.map(
+    (c) => 1 / (1 + POIDS_PASSAGE * passes.filter((id) => id === c.id).length),
+  )
+  const total = poids.reduce((somme, p) => somme + p, 0)
+  let seuil = alea() * total
+  for (const [index, candidat] of choix.entries()) {
+    seuil -= poids[index]
+    if (seuil < 0) return candidat
+  }
+  return choix[choix.length - 1]
+}
+
 /** Durée (en millisecondes) avant l'explosion de la bombe. */
 export function dureeMeche(alea: Alea = Math.random): number {
   return Math.round((MECHE_MIN_S + alea() * (MECHE_MAX_S - MECHE_MIN_S)) * 1000)

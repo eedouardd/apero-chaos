@@ -4,8 +4,8 @@ import { lireSauvegarde } from '../stockage/stockage'
 import { REGLAGES_PAR_DEFAUT, type CarteJouee, type Joueur } from '../types'
 import { ageRequis } from './age'
 import { gagesAutorises, tirerGage } from './gages'
-import { creerJoueur } from './joueurs'
-import { angleRoue, dureeMeche, sanctionPerdant, tirerAction } from './manches'
+import { creerJoueur, reglagesEffectifs } from './joueurs'
+import { angleRoue, dureeMeche, sanctionPerdant, tirerAction, tirerJoueurRoue } from './manches'
 import { calculerStats, calculerTrophees } from './recap'
 import { evaluerJeux } from './recommandations'
 
@@ -197,5 +197,71 @@ describe('jeux à manches', () => {
     expect(avec.joueurs.map((j) => j.prenom)).toEqual(['Tom', 'Zoé'])
     expect(avec.gorgees).toBe(2)
     expect(texte(sanctionPerdant(carte('d'), sobre, [], REGLAGES_PAR_DEFAUT))).toBe('Zoé fait un gage.')
+  })
+})
+
+describe('reglagesEffectifs', () => {
+  test('passe en Sans alcool quand personne ne boit', () => {
+    const effectifs = reglagesEffectifs(REGLAGES_PAR_DEFAUT, groupe(4, { boitAlcool: false }))
+    expect(effectifs.sansAlcool).toBe(true)
+  })
+
+  test('ne change rien dès qu’un joueur boit', () => {
+    const joueurs = [...groupe(3, { boitAlcool: false }), joueur('Zoé')]
+    expect(reglagesEffectifs(REGLAGES_PAR_DEFAUT, joueurs)).toBe(REGLAGES_PAR_DEFAUT)
+  })
+})
+
+describe('gages gênants', () => {
+  const gages = [
+    { id: 'a', texte: 'Simple', ton: 'tout-public' as const },
+    { id: 'b', texte: 'Gênant', ton: 'tout-public' as const, genant: true },
+  ]
+
+  test('écartés si un joueur refuse les questions gênantes', () => {
+    const joueurs = [joueur('Léa'), joueur('Max', { questionsIntimes: false })]
+    expect(gagesAutorises(gages, joueurs, REGLAGES_PAR_DEFAUT).map((g) => g.id)).toEqual(['a'])
+  })
+
+  test('gardés si tout le monde les accepte', () => {
+    expect(gagesAutorises(gages, groupe(3), REGLAGES_PAR_DEFAUT)).toHaveLength(2)
+  })
+})
+
+describe('tirerJoueurRoue', () => {
+  /** Générateur déterministe simple. */
+  function aleaFixe(graine: number) {
+    let etat = graine
+    return () => {
+      etat = (etat * 1103515245 + 12345) % 2147483648
+      return etat / 2147483648
+    }
+  }
+
+  test('ne désigne jamais le même joueur trois fois de suite', () => {
+    const joueurs = groupe(2)
+    const alea = aleaFixe(7)
+    const passes: string[] = []
+    for (let tour = 0; tour < 200; tour += 1) {
+      const designe = tirerJoueurRoue(joueurs, passes, alea)
+      passes.push(designe!.id)
+    }
+    const triple = passes.some((id, i) => i >= 2 && id === passes[i - 1] && id === passes[i - 2])
+    expect(triple).toBe(false)
+  })
+
+  test('fait passer tout le monde à 6 joueurs sur 15 tours', () => {
+    for (let graine = 1; graine <= 50; graine += 1) {
+      const alea = aleaFixe(graine)
+      const passes: string[] = []
+      for (let tour = 0; tour < 15; tour += 1) {
+        passes.push(tirerJoueurRoue(groupe(6), passes, alea)!.id)
+      }
+      expect(new Set(passes).size).toBe(6)
+    }
+  })
+
+  test('renvoie null sans candidat', () => {
+    expect(tirerJoueurRoue([], [])).toBeNull()
   })
 })

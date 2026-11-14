@@ -17,15 +17,29 @@ const TAILLE_PAQUET = 25
  * Jeu de cartes générique : « Défis & Vérités », « Je n'ai jamais », « Qui pourrait… »,
  * « Tu préfères… » et « Vrai ou Bluff » : on lit une carte, puis on passe à la suivante.
  */
-export function JeuCartes({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPartie) {
+export function JeuCartes({
+  jeu,
+  joueurs,
+  reglages,
+  cartesPerso,
+  onQuitter,
+  onFin,
+}: PropsPartie) {
   // Le paquet est fabriqué une seule fois, au début de la partie.
   const [paquet] = useState(() =>
-    construirePaquet(cartesDuJeu(jeu.id), joueurs, reglages, {
-      taille: TAILLE_PAQUET,
-      dejaVues: cartesVues(jeu.id),
-    }),
+    construirePaquet(
+      jeu.id === 'mes-cartes' ? (cartesPerso ?? []) : cartesDuJeu(jeu.id),
+      joueurs,
+      reglages,
+      {
+        taille: TAILLE_PAQUET,
+        dejaVues: cartesVues(jeu.id),
+      },
+    ),
   )
   const [index, setIndex] = useState(0)
+  // Carte la plus lointaine atteinte : revenir en arrière ne retire rien au récap.
+  const [indexMax, setIndexMax] = useState(0)
   const [decompte, setDecompte] = useState(false)
   const fermerDecompte = useCallback(() => setDecompte(false), [])
 
@@ -46,6 +60,7 @@ export function JeuCartes({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPar
       return
     }
     setIndex(index + 1)
+    setIndexMax(Math.max(indexMax, index + 1))
   }
 
   const jouee = paquet[index]
@@ -66,8 +81,9 @@ export function JeuCartes({ jeu, joueurs, reglages, onQuitter, onFin }: PropsPar
       reglages={reglages}
       etape={index + 1}
       total={paquet.length}
-      onTerminer={() => terminer(index + 1)}
+      onTerminer={() => terminer(indexMax + 1)}
       onQuitter={onQuitter}
+      onPrecedent={index === 0 ? null : () => setIndex(index - 1)}
       actionPied={
         jeu.decompte ? (
           <Bouton onClick={() => setDecompte(true)}>3-2-1 !</Bouton>

@@ -73,6 +73,8 @@ export interface Gage {
   ton: Ton
   /** Gage qui demande de bouger. */
   physique?: boolean
+  /** Gage gênant ou intime : écarté si un joueur refuse les questions gênantes. */
+  genant?: boolean
 }
 
 export const GAGES: Gage[] = (gagesBruts as Gage[]).filter(

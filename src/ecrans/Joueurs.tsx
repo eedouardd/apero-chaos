@@ -90,7 +90,7 @@ export function Joueurs({ joueurs, onChange, onRetour, onSuivant }: Props) {
       pied={
         <Bouton onClick={onSuivant} disabled={manque > 0}>
           {manque > 0
-            ? `Encore ${manque} joueur${manque > 1 ? 's' : ''}`
+            ? `Ajoute encore ${manque} joueur${manque > 1 ? 's' : ''}`
             : `C’est parti à ${joueurs.length}`}
         </Bouton>
       }

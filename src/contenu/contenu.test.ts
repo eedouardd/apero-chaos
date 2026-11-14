@@ -7,8 +7,9 @@ import { filtrerCartes } from '../moteur/cartes'
 import type { Joueur } from '../types'
 import gages from './gages.json'
 import imposteur from './imposteur.json'
+import { INTERDITS } from './interdits'
 import { CARTES, PAIRES_IMPOSTEUR, cartesDuJeu, problemesCarte, problemesPaire } from './index'
-import { paireAutorisee } from '../moteur/imposteur'
+import { cleMot, paireAutorisee } from '../moteur/imposteur'
 
 const TOUTES_LES_CARTES = Object.values(CARTES).flat()
 
@@ -18,17 +19,6 @@ const FICHIERS: Record<string, { texte: string; id: string }[]> = {
   // Les deux mots d'une paire passent les mêmes garde-fous que le texte d'une carte.
   'imposteur.json': imposteur.map((paire) => ({ id: paire.id, texte: paire.mots.join(' / ') })),
 }
-
-/** Formulations interdites, même en Hard. */
-const INTERDITS = [
-  /cul[ -]sec/i,
-  /\bshots?\b/i,
-  /\bshooters?\b/i,
-  /verre entier/i,
-  /finis ton verre/i,
-  /\bconduire\b|\bconduis\b|\bvolant\b/i,
-  /mélange.{0,20}(alcool|verre)/i,
-]
 
 const NB_CARTES_MIN = 80
 
@@ -105,12 +95,12 @@ describe('paires de L’Imposteur', () => {
     }
   })
 
-  test('un même mot ne sert pas dans plus de deux paires', () => {
+  test('un même mot ne sert que dans une seule paire', () => {
     const usages = new Map<string, number>()
-    for (const mot of PAIRES_IMPOSTEUR.flatMap((paire) => paire.mots)) {
+    for (const mot of PAIRES_IMPOSTEUR.flatMap((paire) => paire.mots.map(cleMot))) {
       usages.set(mot, (usages.get(mot) ?? 0) + 1)
     }
-    const tropVus = [...usages].filter(([, nb]) => nb > 2).map(([mot]) => mot)
+    const tropVus = [...usages].filter(([, nb]) => nb > 1).map(([mot]) => mot)
     expect(tropVus).toEqual([])
   })
 

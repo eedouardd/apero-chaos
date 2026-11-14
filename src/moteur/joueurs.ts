@@ -4,7 +4,19 @@ import {
   LONGUEUR_PRENOM_MAX,
   NB_JOUEURS_MAX,
   type Joueur,
+  type Reglages,
 } from '../types'
+
+/**
+ * Réglages réellement appliqués à la partie : si personne ne boit d'alcool,
+ * tout se passe comme en mode Sans alcool (gages à la place des gorgées).
+ */
+export function reglagesEffectifs(reglages: Reglages, joueurs: Joueur[]): Reglages {
+  const personneNeBoit = joueurs.length > 0 && joueurs.every((j) => !j.boitAlcool)
+  return personneNeBoit && !reglages.sansAlcool
+    ? { ...reglages, sansAlcool: true }
+    : reglages
+}
 
 export type ResultatAjout =
   | { ok: true; joueur: Joueur }

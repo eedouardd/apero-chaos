@@ -4,7 +4,7 @@ Jeux de soirée sur un seul téléphone qui passe de main en main. Web app insta
 
 **Jouer : https://eedouardd.github.io/apero-chaos/**
 
-Neuf jeux : Défis & Vérités, Je n'ai jamais, Qui pourrait…, La Roue, Duel, Tu préfères…, La Bombe, Vrai ou Bluff, L'Imposteur. Trois tons (Tout public, Étudiant pimenté, Hard), trois intensités, et un mode Sans alcool où les gorgées deviennent des gages.
+Neuf jeux : Défis & Vérités, Je n'ai jamais, Qui pourrait…, La Roue, Duel, Tu préfères…, La Bombe, Vrai ou Bluff, L'Imposteur. Plus « Mes cartes », pour jouer avec des cartes écrites par le groupe. Trois tons (Tout public, Étudiant pimenté, Hard), trois intensités, et un mode Sans alcool où les gorgées deviennent des gages.
 
 ## Installer l'app sur son téléphone
 
@@ -12,7 +12,7 @@ Neuf jeux : Défis & Vérités, Je n'ai jamais, Qui pourrait…, La Roue, Duel, 
 
 **Android (Chrome)** : ouvre le lien, touche le menu ⋮ en haut à droite, puis « Installer l'application » (ou « Ajouter à l'écran d'accueil »).
 
-Une fois ouverte une première fois avec du réseau, l'app fonctionne hors ligne.
+Une fois ouverte une première fois avec du réseau, l'app fonctionne hors ligne. Quand une nouvelle version est en ligne, un bandeau « Nouvelle version prête » apparaît sur l'accueil : un toucher et c'est à jour.
 
 ## Modifier ou ajouter des cartes
 
@@ -61,7 +61,11 @@ Le nombre s'adapte tout seul à l'intensité, et tout devient un gage en mode Sa
 | `tags` | liste de mots | `intime` ou `genant` retire la paire si la majorité du groupe refuse ce contenu |
 | `theme` | libre | jamais affiché ; évite deux paires du même thème dans une partie |
 
-Un même mot ne doit pas servir dans plus de deux paires (`npm test` le vérifie).
+Un même mot ne doit servir que dans une seule paire, pluriels et accents compris (`npm test` le vérifie).
+
+### Gages
+
+`src/contenu/gages.json` : `{ "id": "g-31", "texte": "…", "ton": "tout-public", "physique": true, "genant": true }`. `physique` et `genant` sont facultatifs : le gage est écarté dès qu'un joueur refuse les défis physiques ou les questions gênantes.
 
 ## Travailler sur le code
 
@@ -96,6 +100,6 @@ src/
 └── stockage/     sauvegarde locale (joueurs, réglages)
 ```
 
-Les packs premium (`src/jeux/packs.ts`) sont affichés avec un cadenas. Aucun paiement n'est branché : le fichier explique comment en ajouter un plus tard.
+Les packs premium (`src/jeux/packs.ts`) sont annoncés comme « bientôt ». Aucun paiement n'est branché : le fichier explique comment en ajouter un plus tard.
 
 L'abus d'alcool est dangereux pour la santé. Réservé aux adultes dès qu'il y a de l'alcool.

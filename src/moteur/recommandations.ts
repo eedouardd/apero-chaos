@@ -52,9 +52,9 @@ export function evaluerJeux(
     const tropPeu = nb < jeu.minJoueurs
     const trop = nb > jeu.maxJoueurs
     const raison = tropPeu
-      ? `Il faut au moins ${jeu.minJoueurs} joueurs`
+      ? `Dès ${jeu.minJoueurs} joueurs (vous êtes ${nb})`
       : trop
-        ? `Maximum ${jeu.maxJoueurs} joueurs`
+        ? `${jeu.maxJoueurs} joueurs maximum (vous êtes ${nb})`
         : null
     return {
       jeu,

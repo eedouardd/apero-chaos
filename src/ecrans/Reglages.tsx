@@ -17,9 +17,9 @@ const TONS: { valeur: Ton; libelle: string; detail: string }[] = [
 ]
 
 const INTENSITES: { valeur: Intensite; libelle: string; detail: string }[] = [
-  { valeur: 'soft', libelle: 'Soft', detail: 'Petites gorgées, défis tranquilles' },
+  { valeur: 'soft', libelle: 'Soft', detail: 'Défis tranquilles, petites pénalités' },
   { valeur: 'normal', libelle: 'Normal', detail: 'Le bon équilibre' },
-  { valeur: 'hard', libelle: 'Hard', detail: 'Plus de gorgées, défis corsés' },
+  { valeur: 'hard', libelle: 'Hard', detail: 'Défis corsés, pénalités plus lourdes' },
 ]
 
 interface PropsInterrupteur {

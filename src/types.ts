@@ -93,9 +93,10 @@ export type IdJeu =
   | 'la-bombe'
   | 'vrai-ou-bluff'
   | 'imposteur'
+  | 'mes-cartes'
 
 /** Jeux dont le contenu n'est pas une liste de cartes classiques. */
-export type IdJeuSpecial = 'imposteur'
+export type IdJeuSpecial = 'imposteur' | 'mes-cartes'
 
 /** Jeux qui tirent leurs cartes dans `CARTES` (voir `src/contenu`). */
 export type IdJeuCartes = Exclude<IdJeu, IdJeuSpecial>

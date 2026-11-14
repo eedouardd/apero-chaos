@@ -7,7 +7,6 @@ import { MotSecret } from '../composants/MotSecret'
 import { PasseTelephone } from '../composants/PasseTelephone'
 import { PAIRES_IMPOSTEUR } from '../contenu'
 import type { PropsPartie } from '../ecrans/Partie'
-import { useEcranAllume } from '../effets/ecran'
 import { jouerSon, vibrer } from '../effets/sons'
 import {
   DUREE_DEBAT_S,
@@ -86,9 +85,6 @@ export function JeuImposteur({ jeu, joueurs, reglages, onQuitter, onFin }: Props
     setRevoirConfirme(false)
   }, [])
   const fermerSuspect = useCallback(() => setSuspect(null), [])
-
-  // Le téléphone est posé au milieu pendant le débat et le vote : il ne doit pas s'éteindre.
-  useEcranAllume(phase === 'parole' || phase === 'vote')
 
   const ouvrirVote = useCallback(() => {
     jouerSon('vote')
@@ -351,7 +347,7 @@ export function JeuImposteur({ jeu, joueurs, reglages, onQuitter, onFin }: Props
             onClick={() =>
               demander({
                 titre: 'Annuler la manche ?',
-                detail: 'Nouveaux mots, aucune gorgée comptée.',
+                detail: 'Nouveaux mots, rien n’est compté.',
                 oui: 'Oui, annuler',
                 action: annulerManche,
               })

@@ -43,14 +43,6 @@ export const PACKS_PREMIUM: PackPremium[] = [
     disponible: false,
     prix: null,
   },
-  {
-    id: 'cartes-perso',
-    nom: 'Cartes perso',
-    emoji: '✏️',
-    description: 'Écris tes propres cartes',
-    disponible: false,
-    prix: null,
-  },
 ]
 
 /** Seul point de passage pour savoir si un pack est utilisable. */

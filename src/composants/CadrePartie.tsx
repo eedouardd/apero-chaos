@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { GAGES } from '../contenu'
-import type { DefinitionJeu } from '../jeux/catalogue'
+import { reglesDuJeu, type DefinitionJeu } from '../jeux/catalogue'
+import { useEcranAllume } from '../effets/ecran'
+import { useRetourEnPartie } from '../effets/retour'
 import { gagesAutorises, tirerGage } from '../moteur/gages'
 import type { Joueur, Reglages } from '../types'
 import { Bouton } from './Bouton'
@@ -30,6 +32,8 @@ interface Props {
   actionsPause?: (demander: (confirmation: Confirmation) => void) => ReactNode
   /** Prévenu quand la pause s'ouvre ou se ferme (pour geler un minuteur). */
   onPause?: (enPause: boolean) => void
+  /** Revenir à la carte précédente (jeux de cartes) ; `null` quand on est sur la première. */
+  onPrecedent?: (() => void) | null
   /** Masque le bouton « Gage » (ex. pendant qu'on se passe le téléphone en secret). */
   sansGage?: boolean
   /** « Terminer la partie » depuis la pause : va au récap. */
@@ -52,6 +56,7 @@ export function CadrePartie({
   actionPied,
   actionsPause,
   sansGage = false,
+  onPrecedent,
   onPause,
   onTerminer,
   onQuitter,
@@ -63,6 +68,9 @@ export function CadrePartie({
     [joueurs, reglages],
   )
   const [aConfirmer, setAConfirmer] = useState<Confirmation | null>(null)
+  const [reglesOuvertes, setReglesOuvertes] = useState(false)
+  // Le téléphone reste posé sur la table pendant qu'on discute : l'écran ne doit pas s'éteindre.
+  useEcranAllume(true)
   const ouvrirPause = () => {
     setEnPause(true)
     onPause?.(true)
@@ -70,9 +78,26 @@ export function CadrePartie({
   const fermerPause = useCallback(() => {
     setEnPause(false)
     setAConfirmer(null)
+    setReglesOuvertes(false)
     onPause?.(false)
   }, [onPause])
   const fermerGage = useCallback(() => setGage(null), [])
+  // Bouton retour du téléphone : ouvre la pause (ou la referme), jamais de sortie brutale.
+  useRetourEnPartie(() => {
+    if (gage !== null) fermerGage()
+    else if (enPause) fermerPause()
+    else ouvrirPause()
+  })
+
+  const nbActions = (actionPied ? 1 : 0) + (sansGage ? 0 : 1)
+  const colonnesPied =
+    onPrecedent === undefined
+      ? nbActions === 2
+        ? 'grid-cols-2'
+        : ''
+      : nbActions === 2
+        ? 'grid-cols-[3.5rem_1fr_1fr]'
+        : 'grid-cols-[3.5rem_1fr]'
 
   return (
     <Cadre
@@ -82,10 +107,19 @@ export function CadrePartie({
       iconeRetour="⏸"
       libelleRetour="Mettre en pause"
       pied={
-        sansGage && !actionPied ? undefined : (
-          <div
-            className={actionPied && !sansGage ? 'grid grid-cols-2 gap-2' : undefined}
-          >
+        sansGage && !actionPied && onPrecedent === undefined ? undefined : (
+          <div className={`grid gap-2 ${colonnesPied}`}>
+            {onPrecedent === undefined ? null : (
+              <Bouton
+                variante="contour"
+                aria-label="Carte précédente"
+                disabled={onPrecedent === null}
+                className="px-0!"
+                onClick={() => onPrecedent?.()}
+              >
+                ←
+              </Bouton>
+            )}
             {actionPied}
             {sansGage ? null : (
               <Bouton
@@ -120,9 +154,28 @@ export function CadrePartie({
 
       {children}
 
-      {enPause && aConfirmer === null ? (
+      {enPause && reglesOuvertes ? (
+        <Fenetre titre="Les règles" onFermer={fermerPause}>
+          <ol className="grid gap-3 pb-5 text-lg">
+            {reglesDuJeu(jeu, reglages.sansAlcool).map((regle, numero) => (
+              <li key={regle} className="flex gap-3">
+                <span className="font-titre font-bold text-accent">{numero + 1}</span>
+                <span>{regle}</span>
+              </li>
+            ))}
+          </ol>
+          <Bouton onClick={() => setReglesOuvertes(false)}>Retour à la pause</Bouton>
+        </Fenetre>
+      ) : null}
+
+      {enPause && !reglesOuvertes && aConfirmer === null ? (
         <Fenetre titre="Pause" onFermer={fermerPause}>
-          <Bouton onClick={fermerPause}>Reprendre</Bouton>
+          <div className="grid gap-2">
+            <Bouton onClick={fermerPause}>Reprendre</Bouton>
+            <Bouton variante="contour" onClick={() => setReglesOuvertes(true)}>
+              Revoir les règles
+            </Bouton>
+          </div>
           {/* Les actions qui font perdre quelque chose sont à l'écart et se confirment. */}
           <div className="mt-4 grid gap-2 border-t border-trait pt-4">
             {actionsPause?.(setAConfirmer)}
@@ -156,7 +209,7 @@ export function CadrePartie({
         </Fenetre>
       ) : null}
 
-      {enPause && aConfirmer !== null ? (
+      {enPause && !reglesOuvertes && aConfirmer !== null ? (
         <Fenetre titre={aConfirmer.titre} onFermer={fermerPause}>
           <p className="pb-5 text-center text-lg text-texte-doux">
             {aConfirmer.detail}
@@ -203,6 +256,7 @@ interface PropsVide {
 
 /** Message affiché quand aucune carte ne passe le filtre des réglages. */
 export function PartieVide({ jeu, onQuitter }: PropsVide) {
+  useRetourEnPartie(onQuitter)
   return (
     <Cadre titre={jeu.nom} couleur={jeu.couleur} onRetour={onQuitter}>
       <div className="m-auto grid gap-4 text-center">

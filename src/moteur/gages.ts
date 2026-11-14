@@ -6,17 +6,19 @@ import type { Alea } from './cartes'
 
 const NIVEAU_TON: Record<Ton, number> = { 'tout-public': 0, pimente: 1, hard: 2 }
 
-/** Gages autorisés : ton respecté, et rien de physique si un joueur n'aime pas ça. */
+/** Gages autorisés : ton respecté, et rien de physique ni de gênant si un joueur n'aime pas ça. */
 export function gagesAutorises(
   gages: Gage[],
   joueurs: Joueur[],
   reglages: Reglages,
 ): Gage[] {
   const physiqueOk = joueurs.every((j) => j.defisPhysiques)
+  const genantOk = joueurs.every((j) => j.questionsIntimes)
   return gages.filter(
     (gage) =>
       NIVEAU_TON[gage.ton] <= NIVEAU_TON[reglages.ton] &&
-      (physiqueOk || gage.physique !== true),
+      (physiqueOk || gage.physique !== true) &&
+      (genantOk || gage.genant !== true),
   )
 }
 

@@ -88,6 +88,17 @@ describe('L’Imposteur : choix des paires', () => {
     expect(paireAutorisee(intime, groupe(4), REGLAGES)).toBe(true)
   })
 
+  test('ne ressort jamais un mot déjà vu dans la partie, même au pluriel ou accentué', () => {
+    const sortie = paire('a', { mots: ['Câlin', 'bisou'] })
+    const memeMot = paire('b', { mots: ['calins', 'massage'] })
+    const autre = paire('c', { mots: ['plage', 'piscine'] })
+    const choisie = choisirPaire([memeMot, autre], groupe(4), REGLAGES, {
+      rang: 1,
+      utilisees: [sortie],
+    })
+    expect(choisie?.id).toBe('c')
+  })
+
   test('monte en difficulté : 1, puis 2, 2, puis 3, 3', () => {
     const paires = [1, 2, 3].flatMap((difficulte) =>
       Array.from({ length: 4 }, (_, i) =>

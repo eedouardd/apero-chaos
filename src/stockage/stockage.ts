@@ -11,18 +11,36 @@ import {
   type Ton,
 } from '../types'
 
+import {
+  LONGUEUR_CARTE_PERSO_MAX,
+  NB_CARTES_PERSO_MAX,
+  filtrerCartesPerso,
+} from '../moteur/cartesPerso'
+
 const CLE_STOCKAGE = 'apero-chaos:v1'
 
 export interface Sauvegarde {
   joueurs: Joueur[]
   reglages: Reglages
   sonCoupe: boolean
+  /** Date (ms) de la dernière confirmation « 18 ans ou plus », ou null. */
+  ageConfirmeLe: number | null
+  /** Jeux dont les règles ont déjà été lues : on ne les réimpose plus. */
+  /** Les réglages ont déjà été validés une fois : on ne les réimpose plus à chaque partie. */
+  reglagesVus: boolean
+  reglesVues: string[]
+  /** Textes des cartes écrites par les joueurs (« Mes cartes »). */
+  cartesPerso: string[]
 }
 
 const SAUVEGARDE_VIDE: Sauvegarde = {
   joueurs: [],
   reglages: REGLAGES_PAR_DEFAUT,
   sonCoupe: false,
+  ageConfirmeLe: null,
+  reglagesVus: false,
+  reglesVues: [],
+  cartesPerso: [],
 }
 
 const TONS: Ton[] = ['tout-public', 'pimente', 'hard']
@@ -61,6 +79,17 @@ function lireReglages(brut: unknown): Reglages {
   }
 }
 
+const NB_REGLES_VUES_MAX = 50
+const LONGUEUR_ID_MAX = 40
+
+/** Liste de textes non vides, bornée en nombre et en longueur. */
+function lireTextes(brut: unknown, nbMax: number, longueurMax: number): string[] {
+  if (!Array.isArray(brut)) return []
+  return brut
+    .filter((t): t is string => typeof t === 'string' && t.trim() !== '' && t.length <= longueurMax)
+    .slice(0, nbMax)
+}
+
 /** Transforme un contenu brut (potentiellement abîmé) en sauvegarde valide. */
 export function lireSauvegarde(brut: unknown): Sauvegarde {
   if (!estObjet(brut)) return SAUVEGARDE_VIDE
@@ -73,6 +102,16 @@ export function lireSauvegarde(brut: unknown): Sauvegarde {
     joueurs,
     reglages: lireReglages(brut.reglages),
     sonCoupe: brut.sonCoupe === true,
+    ageConfirmeLe:
+      typeof brut.ageConfirmeLe === 'number' && Number.isFinite(brut.ageConfirmeLe)
+        ? brut.ageConfirmeLe
+        : null,
+    reglagesVus: brut.reglagesVus === true,
+    reglesVues: lireTextes(brut.reglesVues, NB_REGLES_VUES_MAX, LONGUEUR_ID_MAX),
+    // Les cartes relues repassent les mêmes contrôles qu'à la saisie.
+    cartesPerso: filtrerCartesPerso(
+      lireTextes(brut.cartesPerso, NB_CARTES_PERSO_MAX, LONGUEUR_CARTE_PERSO_MAX),
+    ),
   }
 }
 

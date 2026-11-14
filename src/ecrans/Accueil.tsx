@@ -4,13 +4,26 @@ import { Logo } from '../composants/Logo'
 
 interface Props {
   onNouvellePartie: () => void
+  /** Fourni quand une nouvelle version de l'app est prête : la touche recharge la page. */
+  onMettreAJour?: () => void
 }
 
-export function Accueil({ onNouvellePartie }: Props) {
+export function Accueil({ onNouvellePartie, onMettreAJour }: Props) {
   return (
     <Cadre
       pied={<Bouton onClick={onNouvellePartie}>Nouvelle partie</Bouton>}
     >
+      {onMettreAJour ? (
+        <div role="status">
+          <button
+            type="button"
+            onClick={onMettreAJour}
+            className="anim-apparition min-h-12 w-full rounded-2xl border-2 border-neon-cyan bg-surface-2 px-4 py-2 text-base font-semibold active:scale-[0.98]"
+          >
+            ✨ Nouvelle version prête. Touche pour actualiser.
+          </button>
+        </div>
+      ) : null}
       <div className="anim-apparition flex flex-1 flex-col items-center justify-center gap-8 text-center">
         <Logo />
         <div>

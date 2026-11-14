@@ -4,12 +4,14 @@ import { JeuCartes } from '../jeux/JeuCartes'
 import { JeuDuel } from '../jeux/JeuDuel'
 import { JeuImposteur } from '../jeux/JeuImposteur'
 import { JeuRoue } from '../jeux/JeuRoue'
-import type { Joueur, Reglages, StatsPartie } from '../types'
+import type { Carte, Joueur, Reglages, StatsPartie } from '../types'
 
 export interface PropsPartie {
   jeu: DefinitionJeu
   joueurs: Joueur[]
   reglages: Reglages
+  /** Cartes écrites par les joueurs, pour « Mes cartes ». */
+  cartesPerso?: Carte[]
   /** Retour au choix du jeu, sans récap. */
   onQuitter: () => void
   /** Fin de partie, avec les statistiques pour le récap. */

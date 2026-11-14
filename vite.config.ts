@@ -15,8 +15,9 @@ export default defineConfig({
     tailwindcss(),
     // PWA : rend l'app installable sur l'écran d'accueil et jouable hors ligne.
     VitePWA({
-      // Une nouvelle version mise en ligne remplace l'ancienne toute seule.
-      registerType: 'autoUpdate',
+      // Une nouvelle version attend que le joueur touche le bandeau « Nouvelle version »
+      // de l'accueil (voir src/effets/miseAJour.ts) : jamais de rechargement en pleine partie.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'Apéro Chaos',

@@ -6,7 +6,7 @@ import { cartesDuJeu } from '../contenu'
 import { jouerSon, vibrer } from '../effets/sons'
 import type { PropsPartie } from '../ecrans/Partie'
 import { filtrerCartes, rendreCarte } from '../moteur/cartes'
-import { angleRoue, tirerAction } from '../moteur/manches'
+import { angleRoue, tirerAction, tirerJoueurRoue } from '../moteur/manches'
 import { calculerStats } from '../moteur/recap'
 import type { CarteJouee } from '../types'
 
@@ -57,7 +57,7 @@ export function JeuRoue({ jeu, joueurs, reglages, onQuitter, onFin }: PropsParti
   const tour = Math.min(NB_TOURS, Math.max(1, historique.length))
 
   function lancer() {
-    if (phase === 'rotation') return
+    if (phase === 'rotation' || historique.length >= NB_TOURS) return
     const dejaTirees = new Set(historique.map((h) => h.carte.id))
     // On tire parmi les joueurs pour qui il reste au moins une action acceptable.
     const tirages = joueurs
@@ -67,7 +67,11 @@ export function JeuRoue({ jeu, joueurs, reglages, onQuitter, onFin }: PropsParti
         carte: tirerAction(cartes, joueur, dejaTirees),
       }))
       .filter((tirage) => tirage.carte !== null)
-    const tirage = tirages[Math.floor(Math.random() * tirages.length)]
+    const designe = tirerJoueurRoue(
+      tirages.map((t) => t.joueur),
+      historique.map((h) => h.joueurs[0]?.id ?? ''),
+    )
+    const tirage = tirages.find((t) => t.joueur === designe)
     if (tirage === undefined || tirage.carte === null) return
     const jouee = rendreCarte(tirage.carte, [tirage.joueur], reglages)
     setAngle(angleRoue(tirage.index, joueurs.length, angle))
